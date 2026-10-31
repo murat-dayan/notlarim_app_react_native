@@ -11,8 +11,8 @@ export default function RootLayout() {
 
   return (
     <Stack>
-      <Stack.Screen name="index" options={{ title: "Notlarım" }} />
-      <Stack.Screen name="editor" options={{ title: "Not" }} />
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="editor" options={{ headerShown: false }} />
     </Stack>
   );
 }

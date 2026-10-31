@@ -1,5 +1,5 @@
 import { Colors } from "@/constants/colors";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NoteButton } from "../components/NoteButton";
+import { NoteCustomHeader } from "../components/NoteCustomHeader";
 import { useNotesStore } from "../store/useNotesStore";
 
 export function NoteEditorScreen() {
@@ -58,7 +59,7 @@ export function NoteEditorScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior="padding">
-      <Stack.Screen options={{ title: id ? "Notu düzenle" : "Yeni not" }} />
+      <NoteCustomHeader title={id ? "Notu düzenle" : "Yeni Not"} />
 
       <TextInput
         style={styles.titleInput}

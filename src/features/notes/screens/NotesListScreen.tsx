@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NoteCard } from "../components/NoteCard";
+import { NoteCustomHeader } from "../components/NoteCustomHeader";
 import NoteLoadingView from "../components/NoteLoadingView";
 import { NoteSearchBar } from "../components/NoteSearchBar";
 import { useNotesStore } from "../store/useNotesStore";
@@ -73,6 +74,12 @@ export function NotesListScreen() {
 
   return (
     <View style={styles.container}>
+      <NoteCustomHeader
+        title="Notlarım"
+        rightIcon="🔍"
+        onRightPress={() => {}}
+      />
+
       {/* SEÇİM MODU AKTİFSE ÜST BAR */}
       {isSelectionMode ? (
         <View style={[styles.selectionHeader, { paddingTop: insets.top + 10 }]}>
