@@ -1,10 +1,12 @@
 import { Colors } from "@/constants/colors";
+import { getCurrentFormattedTime } from "@/utils/dateUtils";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,6 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NoteButton } from "../components/NoteButton";
 import { NoteCustomHeader } from "../components/NoteCustomHeader";
+import { NoteTextInput } from "../components/NoteTextInput";
 import { useNotesStore } from "../store/useNotesStore";
 
 // Hazır popüler etiket seçenekleri
@@ -99,6 +102,15 @@ export function NoteEditorScreen() {
     ]);
   };
 
+  const handleAddBullet = () => {
+    // Eğer metin boş değilse ve son karakter yeni satır değilse alt alta şık durması için yeni satır ekleriz
+    const bulletPrefix =
+      content.length > 0 && !content.endsWith("\n") ? "\n• " : "• ";
+    setContent(content + bulletPrefix);
+  };
+
+  const characterCount = content.length;
+
   return (
     <KeyboardAvoidingView style={styles.container} behavior="padding">
       <NoteCustomHeader
@@ -109,9 +121,9 @@ export function NoteEditorScreen() {
         onLeftPress={router.back}
       />
 
-      <TextInput
-        style={styles.titleInput}
+      <NoteTextInput
         placeholder="Başlık"
+        label="Başlık Ekleyin"
         value={title}
         onChangeText={setTitle}
       />
@@ -188,14 +200,50 @@ export function NoteEditorScreen() {
         </ScrollView>
       </View>
 
-      <TextInput
-        style={styles.contentInput}
-        placeholder="Notunu yaz..."
-        value={content}
-        onChangeText={setContent}
-        multiline
-        textAlignVertical="top"
-      />
+      <View style={styles.editorContainer}>
+        {/* 🔥 Üst Kısım: Tarih ve Canlı Karakter Sayacı Rozeti */}
+        <View style={styles.editorHeaderMeta}>
+          <View style={styles.metaBadge}>
+            <Ionicons name="time-outline" size={13} color={Colors.textMuted} />
+            <Text style={styles.metaText}>{getCurrentFormattedTime()}</Text>
+          </View>
+          <View style={styles.metaBadge}>
+            <Ionicons name="text-outline" size={13} color={Colors.textMuted} />
+            <Text style={styles.metaText}>{characterCount} karakter</Text>
+          </View>
+        </View>
+
+        {/* İçerik Inputu */}
+        <NoteTextInput
+          placeholder="Notunu yazmaya başla..."
+          value={content}
+          onChangeText={setContent}
+          multiline
+          style={{ minHeight: 250, lineHeight: 24 }}
+        />
+
+        {/* 🔥 Alt Kısım: İşlevsel Araç Çubuğu */}
+        <View style={styles.editorToolbar}>
+          <Pressable style={styles.toolbarButton} onPress={handleAddBullet}>
+            <Ionicons name="list" size={18} color={Colors.primary} />
+            <Text style={styles.toolbarButtonText}>Madde Ekle</Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.toolbarButton}
+            onPress={() => {
+              // İleride etiket ekleme modalını açmak için burayı bağlayabilirsin
+            }}
+          >
+            <Ionicons
+              name="pricetag-outline"
+              size={18}
+              color={Colors.textMain}
+            />
+            <Text style={styles.toolbarButtonText}>Etiket</Text>
+          </Pressable>
+        </View>
+      </View>
 
       <View style={[styles.buttons, { paddingBottom: insets.bottom + 45 }]}>
         {id && (
@@ -299,5 +347,62 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     width: "100%",
     justifyContent: "center",
+  },
+  contentIconWrapper: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: Colors.primary + "15", // Çok hafif şeffaf ana renk arka planı
+    justifyContent: "center",
+    alignItems: "center",
+    alignSelf: "flex-start", // Üst kısma sabitlenir
+    marginTop: 4,
+  },
+  editorContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  editorHeaderMeta: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 4,
+  },
+  metaBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: Colors.card,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  metaText: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    fontWeight: "500",
+  },
+  editorToolbar: {
+    flexDirection: "row",
+    gap: 8,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  toolbarButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: Colors.card,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  toolbarButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.textMain,
   },
 });
