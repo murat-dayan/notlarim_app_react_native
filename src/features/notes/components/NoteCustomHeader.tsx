@@ -1,4 +1,5 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { NoteText } from "./NoteText";
 
 type CustomHeaderProps = {
   title: string;
@@ -13,7 +14,9 @@ export function NoteCustomHeader({
 }: CustomHeaderProps) {
   return (
     <View style={styles.headerContainer}>
-      <Text style={styles.headerTitle}>{title}</Text>
+      <NoteText variant="h1" fontFamily="BuildStorm">
+        {title}{" "}
+      </NoteText>
 
       {rightIcon && (
         <TouchableOpacity style={styles.iconButton} onPress={onRightPress}>
