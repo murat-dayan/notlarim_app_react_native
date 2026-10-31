@@ -8,6 +8,8 @@ type CustomHeaderProps = {
   title: string;
   onRightPress?: () => void;
   rightIcon?: React.ReactNode;
+  onLeftPress?: () => void;
+  leftIcon?: React.ReactNode;
 };
 
 const ROPE_LENGTH = 44;
@@ -16,6 +18,8 @@ export function NoteCustomHeader({
   title,
   onRightPress,
   rightIcon,
+  onLeftPress,
+  leftIcon,
 }: CustomHeaderProps) {
   const swing = useRef(new Animated.Value(1)).current;
   const [groupHeight, setGroupHeight] = useState(0);
@@ -47,7 +51,6 @@ export function NoteCustomHeader({
         style={[
           styles.hangingGroup,
           {
-            // Dönüş merkezini ekranın en üstüne (ipin ucuna) taşıyan hile
             transform: [
               { translateY: -groupHeight / 2 },
               { rotate },
@@ -65,24 +68,38 @@ export function NoteCustomHeader({
           <View style={[styles.nail, styles.nailLeft]} />
           <View style={[styles.nail, styles.nailRight]} />
 
-          {/* Seçenek 1: Dikiş çizgisi */}
+          {/* Dikiş çizgisi */}
           <View pointerEvents="none" style={styles.stitch} />
 
-          {/* Sol Kısım: Özel Fontlu Büyük Başlık */}
+          {/* Sol İkon (Varsa görünür) */}
+          <View style={styles.leftContainer}>
+            {leftIcon && (
+              <NoteRoundIconButton icon={leftIcon} onPress={onLeftPress} />
+            )}
+          </View>
+
+          {/* Orta Başlık (Her zaman tam ortadadır) */}
           <View style={styles.titleContainer}>
             <NoteText
               variant="h1"
               fontFamily="BuildStorm"
               style={styles.titleText}
+              numberOfLines={1}
             >
               {title}
             </NoteText>
           </View>
 
-          {/* Sağ Kısım */}
-          {rightIcon && (
-            <NoteRoundIconButton icon={rightIcon} onPress={onRightPress} />
-          )}
+          {/* Sağ İkon (Varsa görünür) */}
+          <View style={styles.rightContainer}>
+            {rightIcon && (
+              <NoteRoundIconButton
+                icon={rightIcon}
+                onPress={onRightPress}
+                style={{ backgroundColor: Colors.primary }}
+              />
+            )}
+          </View>
         </View>
       </Animated.View>
     </View>
@@ -113,7 +130,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 22,
+    paddingHorizontal: 16,
     paddingVertical: 14,
     backgroundColor: Colors.background,
     borderRadius: 24,
@@ -148,12 +165,27 @@ const styles = StyleSheet.create({
     borderStyle: "dashed",
     borderColor: Colors.primary + "55", // 6 haneli hex olmalı
   },
+  leftContainer: {
+    minWidth: 40, // İkon olmasa bile yer tutar
+    alignItems: "flex-start",
+    zIndex: 2,
+  },
+  rightContainer: {
+    minWidth: 40, // İkon olmasa bile yer tutar
+    alignItems: "flex-end",
+    zIndex: 2,
+  },
   titleContainer: {
-    flexDirection: "row",
-    alignItems: "baseline",
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1,
   },
   titleText: {
     letterSpacing: -1,
     color: Colors.textMain,
+    textAlign: "center",
   },
 });

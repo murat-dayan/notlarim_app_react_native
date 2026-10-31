@@ -96,8 +96,10 @@ export function NotesListScreen() {
     <View style={styles.container}>
       <NoteCustomHeader
         title="Notlarım"
-        rightIcon={<Ionicons name="search" size={20} color={Colors.textMain} />} // 🟢 Doğru (Ionicons bileşeni)
-        onRightPress={toggleSearch}
+        rightIcon={
+          <Ionicons name="add" size={20} color={Colors.textSecondary} />
+        } // 🟢 Doğru (Ionicons bileşeni)
+        onRightPress={() => router.push("/editor")}
       />
 
       {/* SEÇİM MODU AKTİFSE ÜST BAR */}
@@ -129,12 +131,10 @@ export function NotesListScreen() {
         <View style={[styles.normalHeader]}>
           {isSearchOpen ? (
             <View style={styles.searchBarContainer}>
-              <View style={{ flex: 1 }}>
-                <NoteSearchBar
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                />
-              </View>
+              <NoteSearchBar
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
               <NoteRoundIconButton
                 icon={
                   <Ionicons name="close" size={22} color={Colors.textMain} />
@@ -321,16 +321,6 @@ export function NotesListScreen() {
           );
         }}
       />
-
-      {/* FAB (Ekle butonu) */}
-      {!isSelectionMode && (
-        <Pressable
-          style={[styles.fab, { bottom: 30 + insets.bottom }]}
-          onPress={() => router.push("/editor")}
-        >
-          <Text style={styles.fabText}>+</Text>
-        </Pressable>
-      )}
     </View>
   );
 }
@@ -369,10 +359,13 @@ const styles = StyleSheet.create({
   },
   headerIcons: {
     flexDirection: "row",
+    marginHorizontal: 1,
+    width: "100%",
     gap: 8,
   },
   searchBarContainer: {
     flexDirection: "row",
+    width: "100%",
     alignItems: "center",
     gap: 8,
   },
@@ -455,31 +448,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#EF4444",
   },
-  fab: {
-    position: "absolute",
-    right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.primary,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  fabText: {
-    color: "#FFFFFF",
-    fontSize: 28,
-    fontWeight: "300",
-    marginTop: -2,
-  },
   dropdownMenu: {
     position: "absolute",
-    right: 0,
-    top: 48,
+    right: -170,
+    top: 30,
     width: 180,
     backgroundColor: Colors.card,
     borderRadius: 12,

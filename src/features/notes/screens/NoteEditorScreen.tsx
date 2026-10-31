@@ -1,4 +1,5 @@
 import { Colors } from "@/constants/colors";
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -100,7 +101,13 @@ export function NoteEditorScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior="padding">
-      <NoteCustomHeader title={id ? "Notu düzenle" : "Yeni Not"} />
+      <NoteCustomHeader
+        title={id ? "Notu düzenle" : "Yeni Not"}
+        leftIcon={
+          <Ionicons name="arrow-back" size={20} color={Colors.textMain} />
+        }
+        onLeftPress={router.back}
+      />
 
       <TextInput
         style={styles.titleInput}
