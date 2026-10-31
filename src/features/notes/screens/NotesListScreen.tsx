@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NoteCard } from "../components/NoteCard";
 import { NoteCustomHeader } from "../components/NoteCustomHeader";
 import NoteLoadingView from "../components/NoteLoadingView";
+import { NoteRoundIconButton } from "../components/NoteRoundIconButton";
 import { NoteSearchBar } from "../components/NoteSearchBar";
 import { useNotesStore } from "../store/useNotesStore";
 
@@ -76,7 +77,7 @@ export function NotesListScreen() {
     <View style={styles.container}>
       <NoteCustomHeader
         title="Notlarım"
-        rightIcon="🔍"
+        rightIcon={<Ionicons name="search" size={20} />}
         onRightPress={() => {}}
       />
 
@@ -122,19 +123,26 @@ export function NotesListScreen() {
           ) : (
             <View style={styles.headerContent}>
               <View style={styles.headerIcons}>
-                <Pressable style={styles.iconButton} onPress={toggleSearch}>
-                  <Ionicons name="search" size={20} color={Colors.textMain} />
-                </Pressable>
+                {/* Arama Butonuna NoteRoundIconButton Entegre Edildi */}
+                <NoteRoundIconButton
+                  icon={
+                    <Ionicons name="search" size={20} color={Colors.textMain} />
+                  }
+                  onPress={toggleSearch}
+                />
 
-                {/* Filtre İkonu ve Açılır Menüsü */}
+                {/* Filtre Butonuna NoteRoundIconButton Entegre Edildi */}
                 <View style={{ position: "relative" }}>
-                  <Pressable style={styles.iconButton} onPress={toggleSortMenu}>
-                    <Ionicons
-                      name="filter-outline"
-                      size={20}
-                      color={Colors.textMain}
-                    />
-                  </Pressable>
+                  <NoteRoundIconButton
+                    icon={
+                      <Ionicons
+                        name="filter-outline"
+                        size={20}
+                        color={Colors.textMain}
+                      />
+                    }
+                    onPress={toggleSortMenu}
+                  />
 
                   {/* === BUTONUN ALTINDA AÇILAN MENÜ === */}
                   {isSortMenuOpen && (
