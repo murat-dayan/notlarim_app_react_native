@@ -9,6 +9,7 @@ export type UiSlice = {
   isSearchOpen: boolean;
   isSortMenuOpen: boolean;
   sortBy: SortType;
+  selectedTagFilter: string | null;
 
   setSearchQuery: (query: string) => void;
   toggleSelectNote: (id: string) => void;
@@ -18,6 +19,7 @@ export type UiSlice = {
   toggleSortMenu: () => void;
   closeSortMenu: () => void;
   setSortBy: (sort: SortType) => void;
+  setSelectedTagFilter: (tag: string | null) => void;
 };
 
 export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (
@@ -30,6 +32,7 @@ export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (
   isSearchOpen: false,
   isSortMenuOpen: false,
   sortBy: "en yeniler",
+  selectedTagFilter: null,
 
   setSearchQuery: (query) => set({ searchQuery: query }),
 
@@ -78,4 +81,6 @@ export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (
   closeSortMenu: () => set({ isSortMenuOpen: false }),
 
   setSortBy: (sort) => set({ sortBy: sort }),
+
+  setSelectedTagFilter: (tag) => set({ selectedTagFilter: tag }),
 });

@@ -50,6 +50,17 @@ export function NoteCard({
           {note.content || "İçerik bulunmuyor..."}
         </Text>
 
+        {/* 🔥 Etiketler (Eğer varsa alt kısımda şık haplar şeklinde görünür) */}
+        {note.tags && note.tags.length > 0 && (
+          <View style={styles.tagsContainer}>
+            {note.tags.map((tag, index) => (
+              <View key={index} style={styles.tagBadge}>
+                <Text style={styles.tagBadgeText}>#{tag}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* Alt Bilgi */}
         <View style={styles.footerRow}>
           <View style={styles.leftFooter}>
@@ -60,7 +71,7 @@ export function NoteCard({
           <View style={styles.rightFooter}>
             <Text style={styles.dateText}>{formattedDate}</Text>
 
-            {/* 🔥 Tik İşaretsiz, Sadece Renk Dolan Minimalist Daire */}
+            {/* Minimalist Yuvarlak Seçim Dairesi */}
             {isSelectionMode && (
               <View
                 style={[
@@ -127,7 +138,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#475569",
     lineHeight: 21,
-    marginBottom: 12,
+    marginBottom: 10,
+  },
+  // 🔥 Yeni Eklenen Etiket Rozetleri Stili
+  tagsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginBottom: 10,
+  },
+  tagBadge: {
+    backgroundColor: "#F1F5F9",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  tagBadgeText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: Colors.primary,
   },
   footerRow: {
     flexDirection: "row",
@@ -163,7 +194,6 @@ const styles = StyleSheet.create({
     color: "#94a3b8",
     fontWeight: "500",
   },
-  // Minimalist Yuvarlak Seçim Alanı
   modernCheckbox: {
     width: 20,
     height: 20,
@@ -178,8 +208,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     borderColor: Colors.primary,
   },
-  // İçindeki minik nokta (İstersen tamamen boş bırakıp arka plan rengiyle de doldurabilirsin,
-  // burada içine minik şık bir beyaz nokta koyduk ya da tamamen renklendirdik)
   innerDot: {
     width: 8,
     height: 8,

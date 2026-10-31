@@ -1,7 +1,14 @@
 import { Colors } from "@/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NoteCard } from "../components/NoteCard";
 import { NoteCustomHeader } from "../components/NoteCustomHeader";
@@ -20,8 +27,8 @@ export function NotesListScreen() {
   const searchQuery = useNotesStore((s) => s.searchQuery);
   const setSearchQuery = useNotesStore((s) => s.setSearchQuery);
 
-  const sortBy = useNotesStore((s) => s.sortBy); // <-- Eklendi
-  const setSortBy = useNotesStore((s) => s.setSortBy); // <-- Eklendi
+  const sortBy = useNotesStore((s) => s.sortBy);
+  const setSortBy = useNotesStore((s) => s.setSortBy);
 
   const isSortMenuOpen = useNotesStore((s) => s.isSortMenuOpen);
   const toggleSortMenu = useNotesStore((s) => s.toggleSortMenu);
@@ -33,6 +40,9 @@ export function NotesListScreen() {
   const isSelectionMode = useNotesStore((s) => s.isSelectionMode);
   const selectedNoteIds = useNotesStore((s) => s.selectedNoteIds);
 
+  const selectedTagFilter = useNotesStore((s) => s.selectedTagFilter);
+  const setSelectedTagFilter = useNotesStore((s) => s.setSelectedTagFilter);
+
   const toggleSelectNote = useNotesStore((s) => s.toggleSelectNote);
   const selectAllNotes = useNotesStore((s) => s.selectAllNotes);
   const clearSelection = useNotesStore((s) => s.clearSelection);
@@ -42,13 +52,22 @@ export function NotesListScreen() {
     return <NoteLoadingView />;
   }
 
+  const allUniqueTags = Array.from(
+    new Set(notes.flatMap((note) => note.tags || [])),
+  );
+
   const filteredNotes = notes
     .filter((note) => {
       const query = searchQuery.toLowerCase();
-      return (
+      const matchesSearch =
         note.title.toLowerCase().includes(query) ||
-        note.content.toLowerCase().includes(query)
-      );
+        note.content.toLowerCase().includes(query);
+
+      const matchesTag =
+        !selectedTagFilter ||
+        (note.tags && note.tags.includes(selectedTagFilter));
+
+      return matchesSearch && matchesTag;
     })
     .sort((a, b) => {
       if (sortBy === "en yeniler") {
@@ -77,13 +96,13 @@ export function NotesListScreen() {
     <View style={styles.container}>
       <NoteCustomHeader
         title="Notlarım"
-        rightIcon={<Ionicons name="search" size={20} />}
-        onRightPress={() => {}}
+        rightIcon={<Ionicons name="search" size={20} color={Colors.textMain} />} // 🟢 Doğru (Ionicons bileşeni)
+        onRightPress={toggleSearch}
       />
 
       {/* SEÇİM MODU AKTİFSE ÜST BAR */}
       {isSelectionMode ? (
-        <View style={[styles.selectionHeader, { paddingTop: insets.top + 10 }]}>
+        <View style={[styles.selectionHeader]}>
           <View style={styles.selectionInfo}>
             <Pressable onPress={clearSelection}>
               <Text style={styles.cancelText}>✕ İptal</Text>
@@ -107,7 +126,7 @@ export function NotesListScreen() {
           </View>
         </View>
       ) : (
-        <View style={[styles.normalHeader, { paddingTop: insets.top + 10 }]}>
+        <View style={[styles.normalHeader]}>
           {isSearchOpen ? (
             <View style={styles.searchBarContainer}>
               <View style={{ flex: 1 }}>
@@ -116,14 +135,16 @@ export function NotesListScreen() {
                   onChangeText={setSearchQuery}
                 />
               </View>
-              <Pressable style={styles.iconButton} onPress={toggleSearch}>
-                <Ionicons name="close" size={22} color={Colors.textMain} />
-              </Pressable>
+              <NoteRoundIconButton
+                icon={
+                  <Ionicons name="close" size={22} color={Colors.textMain} />
+                }
+                onPress={toggleSearch}
+              />
             </View>
           ) : (
             <View style={styles.headerContent}>
               <View style={styles.headerIcons}>
-                {/* Arama Butonuna NoteRoundIconButton Entegre Edildi */}
                 <NoteRoundIconButton
                   icon={
                     <Ionicons name="search" size={20} color={Colors.textMain} />
@@ -131,7 +152,6 @@ export function NotesListScreen() {
                   onPress={toggleSearch}
                 />
 
-                {/* Filtre Butonuna NoteRoundIconButton Entegre Edildi */}
                 <View style={{ position: "relative" }}>
                   <NoteRoundIconButton
                     icon={
@@ -144,7 +164,7 @@ export function NotesListScreen() {
                     onPress={toggleSortMenu}
                   />
 
-                  {/* === BUTONUN ALTINDA AÇILAN MENÜ === */}
+                  {/* === SIRALAMA MENÜSÜ === */}
                   {isSortMenuOpen && (
                     <View style={styles.dropdownMenu}>
                       <Text style={styles.menuTitle}>Sıralama Ölçütü</Text>
@@ -217,6 +237,58 @@ export function NotesListScreen() {
         </View>
       )}
 
+      {/* ETİKET FİLTRELEME ÇUBUĞU */}
+      {!isSelectionMode && allUniqueTags.length > 0 && (
+        <View style={styles.filterBarContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterScrollContent}
+          >
+            <Pressable
+              style={[
+                styles.filterChip,
+                selectedTagFilter === null && styles.activeFilterChip,
+              ]}
+              onPress={() => setSelectedTagFilter(null)}
+            >
+              <Text
+                style={[
+                  styles.filterChipText,
+                  selectedTagFilter === null && styles.activeFilterChipText,
+                ]}
+              >
+                Tümü
+              </Text>
+            </Pressable>
+
+            {allUniqueTags.map((tag) => {
+              const isSelected = selectedTagFilter === tag;
+              return (
+                <Pressable
+                  key={tag}
+                  style={[
+                    styles.filterChip,
+                    isSelected && styles.activeFilterChip,
+                  ]}
+                  onPress={() => setSelectedTagFilter(isSelected ? null : tag)}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      isSelected && styles.activeFilterChipText,
+                    ]}
+                  >
+                    #{tag}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Not Listesi */}
       <FlatList
         data={filteredNotes}
         keyExtractor={(n) => n.id}
@@ -224,15 +296,17 @@ export function NotesListScreen() {
           styles.list,
           {
             paddingBottom: insets.bottom + 90,
-            paddingTop: isSelectionMode ? 20 : 16,
+            paddingTop: isSelectionMode ? 20 : 12,
           },
         ]}
         ListEmptyComponent={
-          <Text style={styles.empty}>
-            {searchQuery
-              ? "Aradığınız kritere uygun not bulunamadı."
-              : "Henüz not yok. + ile ilk notunu ekle."}
-          </Text>
+          <View style={styles.emptyContainer}>
+            <Text style={styles.empty}>
+              {searchQuery || selectedTagFilter
+                ? "Aradığınız kritere uygun not bulunamadı."
+                : "Henüz not yok. + ile ilk notunu ekle."}
+            </Text>
+          </View>
         }
         renderItem={({ item }) => {
           const isSelected = selectedNoteIds.includes(item.id);
@@ -248,7 +322,7 @@ export function NotesListScreen() {
         }}
       />
 
-      {/* Seçim modunda değilse FAB (ekle butonu) görünsün */}
+      {/* FAB (Ekle butonu) */}
       {!isSelectionMode && (
         <Pressable
           style={[styles.fab, { bottom: 30 + insets.bottom }]}
@@ -270,30 +344,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
   },
+  emptyContainer: {
+    paddingVertical: 40,
+    alignItems: "center",
+  },
   empty: {
     textAlign: "center",
     color: Colors.textMuted,
-    marginTop: 40,
     fontSize: 14,
   },
-  // === YENİ EKLENEN STİLLER (Header ve İkonlar için) ===
   normalHeader: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingTop: 0,
+    paddingBottom: 8,
     backgroundColor: Colors.card,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
   headerContent: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     alignItems: "center",
     height: 44,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: Colors.textMain,
   },
   headerIcons: {
     flexDirection: "row",
@@ -304,16 +376,37 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: "#F1F5F9",
-    justifyContent: "center",
+  filterBarContainer: {
+    backgroundColor: Colors.card,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    paddingVertical: 4,
+  },
+  filterScrollContent: {
+    paddingHorizontal: 16,
+    gap: 8,
     alignItems: "center",
   },
-  // ====================================================
-
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 14,
+    backgroundColor: "#F1F5F9",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  activeFilterChip: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  filterChipText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.textMain,
+  },
+  activeFilterChipText: {
+    color: "#FFFFFF",
+  },
   selectionHeader: {
     backgroundColor: Colors.card,
     flexDirection: "row",
@@ -384,9 +477,9 @@ const styles = StyleSheet.create({
     marginTop: -2,
   },
   dropdownMenu: {
-    position: "absolute", // <-- İkon butonuna göre konumlanır
-    right: -124, // <-- İkonun sağ hizasından başlar
-    top: 48, // <-- İkonun hemen altında belirir
+    position: "absolute",
+    right: 0,
+    top: 48,
     width: 180,
     backgroundColor: Colors.card,
     borderRadius: 12,
@@ -398,7 +491,7 @@ const styles = StyleSheet.create({
     elevation: 8,
     borderWidth: 1,
     borderColor: Colors.border,
-    zIndex: 999, // <-- Diğer elementlerin üzerinde görünmesini sağlar
+    zIndex: 999,
   },
   menuTitle: {
     fontSize: 12,

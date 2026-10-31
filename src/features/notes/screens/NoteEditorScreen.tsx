@@ -4,8 +4,11 @@ import { useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
+  ScrollView,
   StyleSheet,
+  Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -13,9 +16,18 @@ import { NoteButton } from "../components/NoteButton";
 import { NoteCustomHeader } from "../components/NoteCustomHeader";
 import { useNotesStore } from "../store/useNotesStore";
 
+// Hazır popüler etiket seçenekleri
+const PREDEFINED_TAGS = [
+  "İş",
+  "Kişisel",
+  "Fikir",
+  "Önemli",
+  "Alışveriş",
+  "Eğitim",
+];
+
 export function NoteEditorScreen() {
   const insets = useSafeAreaInsets();
-
   const router = useRouter();
 
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -29,15 +41,44 @@ export function NoteEditorScreen() {
   const [title, setTitle] = useState(existing?.title ?? "");
   const [content, setContent] = useState(existing?.content ?? "");
 
+  // 🔥 Seçilen etiketleri dizi olarak tutuyoruz
+  const [selectedTags, setSelectedTags] = useState<string[]>(
+    existing?.tags ?? [],
+  );
+
+  // Özel yeni etiket eklemek için input state'i
+  const [customTagInput, setCustomTagInput] = useState("");
+  const [isAddingCustom, setIsAddingCustom] = useState(false);
+
+  // Etiket seçme / kaldırma mantığı
+  const toggleTag = (tag: string) => {
+    if (selectedTags.includes(tag)) {
+      setSelectedTags(selectedTags.filter((t) => t !== tag));
+    } else {
+      setSelectedTags([...selectedTags, tag]);
+    }
+  };
+
+  // Kullanıcının özel etiket eklemesi
+  const handleAddCustomTag = () => {
+    const trimmed = customTagInput.trim();
+    if (trimmed && !selectedTags.includes(trimmed)) {
+      setSelectedTags([...selectedTags, trimmed]);
+    }
+    setCustomTagInput("");
+    setIsAddingCustom(false);
+  };
+
   const handleSave = async () => {
     if (!title.trim() && !content.trim()) {
       router.back();
       return;
     }
+
     if (id) {
-      await updateNote(id, title, content);
+      await updateNote(id, title, content, selectedTags);
     } else {
-      await addNote(title, content);
+      await addNote(title, content, selectedTags);
     }
     router.back();
   };
@@ -67,6 +108,79 @@ export function NoteEditorScreen() {
         value={title}
         onChangeText={setTitle}
       />
+
+      {/* 🔥 İnteraktif Etiket Seçim Alanı */}
+      <View style={styles.tagsSection}>
+        <Text style={styles.sectionLabel}>Etiketler</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tagsContainer}
+        >
+          {PREDEFINED_TAGS.map((tag) => {
+            const isSelected = selectedTags.includes(tag);
+            return (
+              <TouchableOpacity
+                key={tag}
+                style={[styles.tagChip, isSelected && styles.selectedTagChip]}
+                onPress={() => toggleTag(tag)}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[styles.tagText, isSelected && styles.selectedTagText]}
+                >
+                  {tag} {isSelected ? "✓" : "+"}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+
+          {/* Kullanıcının kendi özel etiketleri (hazır listede olmayanlar) */}
+          {selectedTags
+            .filter((t) => !PREDEFINED_TAGS.includes(t))
+            .map((tag) => (
+              <TouchableOpacity
+                key={tag}
+                style={[styles.tagChip, styles.selectedTagChip]}
+                onPress={() => toggleTag(tag)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.tagText, styles.selectedTagText]}>
+                  {tag} ✓
+                </Text>
+              </TouchableOpacity>
+            ))}
+
+          {/* Yeni Özel Etiket Ekleme Butonu / Inputu */}
+          {isAddingCustom ? (
+            <View style={styles.customTagInputContainer}>
+              <TextInput
+                style={styles.customTagInput}
+                placeholder="Etiket adı..."
+                placeholderTextColor={Colors.textMuted}
+                value={customTagInput}
+                onChangeText={setCustomTagInput}
+                onSubmitEditing={handleAddCustomTag}
+                autoFocus
+              />
+              <TouchableOpacity
+                onPress={handleAddCustomTag}
+                style={styles.addTagConfirmBtn}
+              >
+                <Text style={styles.addTagConfirmText}>Ekle</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.addTagChip}
+              onPress={() => setIsAddingCustom(true)}
+            >
+              <Text style={styles.addTagText}>+ Yeni Etiket</Text>
+            </TouchableOpacity>
+          )}
+        </ScrollView>
+      </View>
+
       <TextInput
         style={styles.contentInput}
         placeholder="Notunu yaz..."
@@ -96,6 +210,81 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
     marginBottom: 12,
   },
+  tagsSection: {
+    marginBottom: 12,
+  },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: Colors.textMuted,
+    marginBottom: 6,
+  },
+  tagsContainer: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+    paddingVertical: 4,
+  },
+  tagChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: Colors.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  selectedTagChip: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  tagText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: Colors.textMain,
+  },
+  selectedTagText: {
+    color: "#FFFFFF",
+  },
+  addTagChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderStyle: "dashed",
+    backgroundColor: "transparent",
+  },
+  addTagText: {
+    fontSize: 13,
+    color: Colors.textMuted,
+    fontWeight: "500",
+  },
+  customTagInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    paddingLeft: 10,
+    overflow: "hidden",
+  },
+  customTagInput: {
+    fontSize: 13,
+    color: Colors.textMain,
+    paddingVertical: 4,
+    width: 90,
+  },
+  addTagConfirmBtn: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  addTagConfirmText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "600",
+  },
   contentInput: { flex: 1, fontSize: 16 },
   buttons: {
     flexDirection: "row",
@@ -104,13 +293,4 @@ const styles = StyleSheet.create({
     width: "100%",
     justifyContent: "center",
   },
-  button: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  save: { backgroundColor: Colors.primary },
-  delete: { backgroundColor: Colors.error },
-  buttonText: { color: Colors.textSecondary, fontSize: 16, fontWeight: "600" },
 });

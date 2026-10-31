@@ -7,8 +7,13 @@ export type NoteSlice = {
   notes: Note[];
   isLoading: boolean;
   loadNotes: () => Promise<void>;
-  addNote: (title: string, content: string) => Promise<void>;
-  updateNote: (id: string, title: string, content: string) => Promise<void>;
+  addNote: (title: string, content: string, tags: string[]) => Promise<void>;
+  updateNote: (
+    id: string,
+    title: string,
+    content: string,
+    tags: string[],
+  ) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   deleteSelectedNotes: () => Promise<void>;
 };
@@ -25,12 +30,13 @@ export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
     set({ notes, isLoading: false });
   },
 
-  addNote: async (title, content) => {
+  addNote: async (title, content, tags) => {
     const now = Date.now();
     const yeniNot: Note = {
       id: now.toString(),
       title,
       content,
+      tags,
       createdAt: now,
       updatedAt: now,
     };
@@ -39,11 +45,17 @@ export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
     set((state) => ({ notes: [yeniNot, ...state.notes] }));
   },
 
-  updateNote: async (id, title, content) => {
+  updateNote: async (id, title, content, tags) => {
     const eski = get().notes.find((n) => n.id === id);
     if (!eski) return;
 
-    const guncel: Note = { ...eski, title, content, updatedAt: Date.now() };
+    const guncel: Note = {
+      ...eski,
+      title,
+      content,
+      tags,
+      updatedAt: Date.now(),
+    };
     await notesRepository.update(guncel);
 
     set((state) => ({
