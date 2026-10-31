@@ -4,13 +4,12 @@ import { useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
-  Pressable,
   StyleSheet,
-  Text,
   TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { NoteButton } from "../components/NoteButton";
 import { useNotesStore } from "../store/useNotesStore";
 
 export function NoteEditorScreen() {
@@ -78,16 +77,9 @@ export function NoteEditorScreen() {
 
       <View style={[styles.buttons, { paddingBottom: insets.bottom + 45 }]}>
         {id && (
-          <Pressable
-            style={[styles.button, styles.delete]}
-            onPress={handleDelete}
-          >
-            <Text style={styles.buttonText}>Sil</Text>
-          </Pressable>
+          <NoteButton title="Sil" onPress={handleDelete} variant="secondary" />
         )}
-        <Pressable style={[styles.button, styles.save]} onPress={handleSave}>
-          <Text style={styles.buttonText}>Kaydet</Text>
-        </Pressable>
+        <NoteButton title="Kaydet" onPress={handleSave} variant="primary" />
       </View>
     </KeyboardAvoidingView>
   );
@@ -104,7 +96,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   contentInput: { flex: 1, fontSize: 16 },
-  buttons: { flexDirection: "row", gap: 12, paddingTop: 12 },
+  buttons: {
+    flexDirection: "row",
+    gap: 12,
+    paddingTop: 12,
+    width: "100%",
+    justifyContent: "center",
+  },
   button: {
     flex: 1,
     paddingVertical: 14,
