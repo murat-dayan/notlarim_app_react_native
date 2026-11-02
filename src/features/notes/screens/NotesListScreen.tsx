@@ -1,4 +1,5 @@
 import { Colors } from "@/constants/colors";
+import { authenticateBiometric } from "@/utils/biometric";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import {
@@ -50,6 +51,8 @@ export function NotesListScreen() {
 
   const togglePinNote = useNotesStore((s) => s.togglePinNote);
 
+  const toggleLockNote = useNotesStore((s) => s.toggleLockNote);
+
   if (isLoading) {
     return <NoteLoadingView />;
   }
@@ -60,6 +63,8 @@ export function NotesListScreen() {
 
   const filteredNotes = notes
     .filter((note) => {
+      if (note.isLocked) return false;
+
       const query = searchQuery.toLowerCase();
       const matchesSearch =
         note.title.toLowerCase().includes(query) ||
@@ -97,6 +102,16 @@ export function NotesListScreen() {
     }
   };
 
+  const handleOpenVault = async () => {
+    const isAuthenticated = await authenticateBiometric();
+
+    if (isAuthenticated) {
+      router.push("/locked-notes"); // Güvenli sayfaya yönlendir
+    } else {
+      console.log("Doğrulama başarısız.");
+    }
+  };
+
   return (
     <View style={styles.container}>
       <NoteCustomHeader
@@ -122,6 +137,16 @@ export function NotesListScreen() {
           <View style={styles.selectionActions}>
             <Pressable style={styles.actionBtn} onPress={selectAllNotes}>
               <Text style={styles.actionBtnText}>Hepsini Seç</Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.actionBtn}
+              onPress={() => {
+                selectedNoteIds.forEach((id) => toggleLockNote(id));
+                clearSelection();
+              }}
+            >
+              <Text style={styles.actionBtnText}>🔒 Kilitle</Text>
             </Pressable>
 
             <Pressable
@@ -236,6 +261,17 @@ export function NotesListScreen() {
                     </View>
                   )}
                 </View>
+
+                <NoteRoundIconButton
+                  icon={
+                    <Ionicons
+                      name="lock-closed"
+                      size={20}
+                      color={Colors.textMain}
+                    />
+                  }
+                  onPress={handleOpenVault}
+                />
               </View>
             </View>
           )}

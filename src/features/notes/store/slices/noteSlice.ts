@@ -17,6 +17,7 @@ export type NoteSlice = {
   deleteNote: (id: string) => Promise<void>;
   deleteSelectedNotes: () => Promise<void>;
   togglePinNote: (id: string) => Promise<void>;
+  toggleLockNote: (id: string) => Promise<void>; // 🔥 Yeni eklendi
 };
 
 export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
@@ -41,6 +42,7 @@ export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
       createdAt: now,
       updatedAt: now,
       isPinned: false,
+      isLocked: false,
     };
 
     await notesRepository.insert(yeniNot);
@@ -94,6 +96,23 @@ export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
     set((state) => ({
       notes: state.notes.map((n) =>
         n.id === id ? { ...n, isPinned: yeniPinDurumu } : n,
+      ),
+    }));
+  },
+
+  toggleLockNote: async (id: string) => {
+    const hedefNot = get().notes.find((n) => n.id === id);
+    if (!hedefNot) return;
+
+    const yeniKilitDurumu = !hedefNot.isLocked;
+
+    // Veritabanını güncelle
+    await notesRepository.toggleLock(id, yeniKilitDurumu);
+
+    // State'i güncelle
+    set((state) => ({
+      notes: state.notes.map((n) =>
+        n.id === id ? { ...n, isLocked: yeniKilitDurumu } : n,
       ),
     }));
   },
