@@ -34,6 +34,7 @@ export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
 
   addNote: async (title, content, tags) => {
     const now = Date.now();
+    const activeWorkspaceId = (get() as any).activeWorkspaceId || "default"; // 🔥 Aktif çalışma alanını alıyoruz
     const yeniNot: Note = {
       id: now.toString(),
       title,
@@ -43,6 +44,7 @@ export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
       updatedAt: now,
       isPinned: false,
       isLocked: false,
+      workspaceId: activeWorkspaceId,
     };
 
     await notesRepository.insert(yeniNot);

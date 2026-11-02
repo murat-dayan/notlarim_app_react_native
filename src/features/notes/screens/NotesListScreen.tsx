@@ -2,6 +2,7 @@ import { Colors } from "@/constants/colors";
 import { authenticateBiometric } from "@/utils/biometric";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
   FlatList,
   Pressable,
@@ -16,6 +17,7 @@ import { NoteCustomHeader } from "../components/NoteCustomHeader";
 import NoteLoadingView from "../components/NoteLoadingView";
 import { NoteRoundIconButton } from "../components/NoteRoundIconButton";
 import { NoteSearchBar } from "../components/NoteSearchBar";
+import { NoteWorkspaceModal } from "../components/NoteWorkSpaceModal";
 import { useNotesStore } from "../store/useNotesStore";
 
 export function NotesListScreen() {
@@ -53,6 +55,14 @@ export function NotesListScreen() {
 
   const toggleLockNote = useNotesStore((s) => s.toggleLockNote);
 
+  const activeWorkspaceId = useNotesStore((s) => s.activeWorkspaceId);
+  const workspaces = useNotesStore((s) => s.workspaces);
+  const setActiveWorkspaceId = useNotesStore((s) => s.setActiveWorkspaceId);
+
+  // State eklemesi:
+  const [isWorkspaceModalVisible, setIsWorkspaceModalVisible] = useState(false);
+  const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
+
   if (isLoading) {
     return <NoteLoadingView />;
   }
@@ -63,6 +73,10 @@ export function NotesListScreen() {
 
   const filteredNotes = notes
     .filter((note) => {
+      if (note.workspaceId && note.workspaceId !== activeWorkspaceId)
+        return false;
+      if (!note.workspaceId && activeWorkspaceId !== "default") return false;
+
       if (note.isLocked) return false;
 
       const query = searchQuery.toLowerCase();
@@ -120,6 +134,10 @@ export function NotesListScreen() {
           <Ionicons name="add" size={20} color={Colors.textSecondary} />
         } // 🟢 Doğru (Ionicons bileşeni)
         onRightPress={() => router.push("/editor")}
+        leftIcon={
+          <Ionicons name="grid-outline" size={18} color={Colors.primary} />
+        }
+        onLeftPress={() => setIsWorkspaceModalVisible(true)}
       />
 
       {/* SEÇİM MODU AKTİFSE ÜST BAR */}
@@ -333,6 +351,7 @@ export function NotesListScreen() {
       <FlatList
         data={filteredNotes}
         keyExtractor={(n) => n.id}
+        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         contentContainerStyle={[
           styles.list,
           {
@@ -365,6 +384,11 @@ export function NotesListScreen() {
             />
           );
         }}
+      />
+
+      <NoteWorkspaceModal
+        visible={isWorkspaceModalVisible}
+        onClose={() => setIsWorkspaceModalVisible(false)}
       />
     </View>
   );

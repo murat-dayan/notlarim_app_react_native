@@ -7,12 +7,12 @@ import { ActivityIndicator, View } from "react-native";
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  // 1. Tüm hook'lar en üstte ve sırası hiç değişmeyecek şekilde çağrılmalı
   const [fontsLoaded] = useFonts({
     BuildStorm: require("../../assets/fonts/RubikStorm-Regular.ttf"),
   });
 
   const loadNotes = useNotesStore((s) => s.loadNotes);
+  const loadWorkspaces = useNotesStore((s) => s.loadWorkspaces); // 🔥 Eklendi
 
   useEffect(() => {
     if (fontsLoaded) {
@@ -22,9 +22,9 @@ export default function RootLayout() {
 
   useEffect(() => {
     loadNotes();
-  }, [loadNotes]);
+    loadWorkspaces(); // 🔥 Uygulama açılır açılmaz çalışma alanlarını yüklüyoruz
+  }, [loadNotes, loadWorkspaces]);
 
-  // 2. Koşullu kontrol (Early return) en sonda yapılmalı
   if (!fontsLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>

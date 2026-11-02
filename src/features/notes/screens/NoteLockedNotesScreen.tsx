@@ -33,17 +33,26 @@ export function NoteLockedNotesScreen() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <NoteSwipeableItem
-              onSwipeComplete={() => toggleLockNote(item.id)}
-              actionText="Kilidi Aç"
-              actionIcon="lock-open-outline"
-              actionColor={Colors.error}
-              direction="left"
+              // Sola çekince sadece "Kaldır" çalışır
+              onSwipeLeft={() => toggleLockNote(item.id)}
+              leftActionText="Kaldır"
+              leftActionIcon="lock-open-outline"
+              leftActionColor={Colors.error}
+              // Sağa çekince sadece "Düzenle" çalışır
+              onSwipeRight={() =>
+                router.push({ pathname: "/editor", params: { id: item.id } })
+              }
+              rightActionText="Düzenle"
+              rightActionIcon="create-outline"
+              rightActionColor="#3b82f6"
             >
               <NoteCard
                 note={item}
                 isSelected={false}
                 isSelectionMode={false}
-                onPress={() => {}}
+                onPress={() =>
+                  router.push({ pathname: "/editor", params: { id: item.id } })
+                }
                 onLongPress={() => {}}
                 onTogglePin={() => {}}
               />

@@ -10,6 +10,7 @@ type NoteRow = {
   updated_at: number;
   is_pinned: number;
   is_locked: number;
+  workspace_id: string;
 };
 
 const toNote = (row: NoteRow): Note => ({
@@ -21,6 +22,7 @@ const toNote = (row: NoteRow): Note => ({
   updatedAt: row.updated_at,
   isPinned: Boolean(row.is_pinned),
   isLocked: Boolean(row.is_locked),
+  workspaceId: row.workspace_id || "default",
 });
 
 export const notesRepository = {
@@ -37,7 +39,7 @@ export const notesRepository = {
     const tagsJson = JSON.stringify(note.tags || []); // Diziyi JSON metnine çeviriyoruz
 
     await db.runAsync(
-      "INSERT INTO notes (id, title, content, tags, created_at,updated_at , is_pinned, is_locked) VALUES (?, ?, ?, ?, ?, ?,?,?)",
+      "INSERT INTO notes (id, title, content, tags, created_at,updated_at , is_pinned, is_locked, workspace_id) VALUES (?,?, ?, ?, ?, ?, ?,?,?)",
       [
         note.id,
         note.title,
@@ -47,6 +49,7 @@ export const notesRepository = {
         note.updatedAt,
         note.isPinned ? 1 : 0,
         note.isLocked ? 1 : 0,
+        note.workspaceId || "default",
       ],
     );
   },
@@ -56,8 +59,15 @@ export const notesRepository = {
     const tagsJson = JSON.stringify(note.tags || []);
 
     await db.runAsync(
-      "UPDATE notes SET title = ?, content = ?, tags = ?, updated_at = ? WHERE id = ?",
-      [note.title, note.content, tagsJson, note.updatedAt, note.id],
+      "UPDATE notes SET title = ?, content = ?, tags = ?, updated_at, workspace_id =? = ? WHERE id = ?",
+      [
+        note.title,
+        note.content,
+        tagsJson,
+        note.updatedAt,
+        note.workspaceId,
+        note.id,
+      ],
     );
   },
 

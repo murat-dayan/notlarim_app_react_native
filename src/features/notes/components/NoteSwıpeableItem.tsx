@@ -2,59 +2,77 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useRef } from "react";
 import { Animated, PanResponder, StyleSheet, Text, View } from "react-native";
 
-interface SwipeableItemProps {
+interface NoteSwipeableItemProps {
   children: React.ReactNode;
-  onSwipeComplete: () => void;
-  actionText?: string;
-  actionIcon?: keyof typeof Ionicons.glyphMap;
-  actionColor?: string;
+  onSwipeLeft?: () => void; // Sola kaydırınca (Kaldır)
+  onSwipeRight?: () => void; // Sağa kaydırınca (Düzenle)
+
+  leftActionText?: string;
+  leftActionIcon?: keyof typeof Ionicons.glyphMap;
+  leftActionColor?: string;
+
+  rightActionText?: string;
+  rightActionIcon?: keyof typeof Ionicons.glyphMap;
+  rightActionColor?: string;
+
   threshold?: number;
-  direction?: "left" | "right"; // 🔥 Yön parametresi eklendi
 }
 
 export function NoteSwipeableItem({
   children,
-  onSwipeComplete,
-  actionText = "Kilidi Aç",
-  actionIcon = "lock-open-outline",
-  actionColor = "#10b981",
+  onSwipeLeft,
+  onSwipeRight,
+  leftActionText = "Kaldır",
+  leftActionIcon = "lock-open-outline",
+  leftActionColor = "#ef4444",
+  rightActionText = "Düzenle",
+  rightActionIcon = "create-outline",
+  rightActionColor = "#3b82f6",
   threshold = 120,
-  direction = "left", // Varsayılan olarak sola kaydırma
-}: SwipeableItemProps) {
+}: NoteSwipeableItemProps) {
   const panX = useRef(new Animated.Value(0)).current;
-  const isLeft = direction === "left";
+
+  const rightBackgroundOpacity = panX.interpolate({
+    inputRange: [-120, 0],
+    outputRange: [1, 0],
+    extrapolate: "clamp",
+  });
+
+  const leftBackgroundOpacity = panX.interpolate({
+    inputRange: [0, 120],
+    outputRange: [0, 1],
+    extrapolate: "clamp",
+  });
 
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, gestureState) => {
-        const isHorizontal =
-          Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
-        // Sola mı yoksa sağa mı çekildiğini kontrol et
         return (
-          isHorizontal &&
-          (isLeft ? gestureState.dx < -10 : gestureState.dx > 10)
+          Math.abs(gestureState.dx) > Math.abs(gestureState.dy) &&
+          Math.abs(gestureState.dx) > 10
         );
       },
       onPanResponderMove: (_, gestureState) => {
-        if (isLeft && gestureState.dx < 0) {
-          panX.setValue(gestureState.dx); // Sola doğru negatif değer alır
-        } else if (!isLeft && gestureState.dx > 0) {
-          panX.setValue(gestureState.dx); // Sağa doğru pozitif değer alır
-        }
+        panX.setValue(gestureState.dx);
       },
       onPanResponderRelease: (_, gestureState) => {
-        const triggered = isLeft
-          ? gestureState.dx < -threshold
-          : gestureState.dx > threshold;
-
-        if (triggered) {
+        if (gestureState.dx < -threshold && onSwipeLeft) {
           Animated.timing(panX, {
-            toValue: isLeft ? -400 : 400,
+            toValue: -400,
             duration: 200,
             useNativeDriver: true,
           }).start(() => {
-            onSwipeComplete();
+            onSwipeLeft();
+            panX.setValue(0);
+          });
+        } else if (gestureState.dx > threshold && onSwipeRight) {
+          Animated.timing(panX, {
+            toValue: 400,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => {
+            onSwipeRight();
             panX.setValue(0);
           });
         } else {
@@ -69,30 +87,41 @@ export function NoteSwipeableItem({
 
   return (
     <View style={styles.cardWrapper}>
-      {/* Arkada görünecek aksiyon arka planı (Yöne göre sağda veya solda konumlanır) */}
-      <View
-        style={[
-          styles.hiddenActionBackground,
-          { backgroundColor: actionColor },
-          isLeft
-            ? { right: 0, justifyContent: "flex-end", paddingRight: 20 }
-            : { left: 0, justifyContent: "flex-start", paddingLeft: 20 },
-        ]}
-      >
-        {isLeft ? (
-          <>
-            <Text style={styles.actionText}>{actionText}</Text>
-            <Ionicons name={actionIcon} size={22} color="#FFFFFF" />
-          </>
-        ) : (
-          <>
-            <Ionicons name={actionIcon} size={22} color="#FFFFFF" />
-            <Text style={styles.actionText}>{actionText}</Text>
-          </>
-        )}
-      </View>
+      {/* 🔴 Sola çekilince sağ arkada görünen alan ("Kaldır") */}
+      {onSwipeLeft && (
+        <Animated.View
+          style={[
+            styles.actionBackground,
+            styles.rightAction,
+            {
+              backgroundColor: leftActionColor,
+              opacity: rightBackgroundOpacity,
+            },
+          ]}
+        >
+          <Text style={styles.actionText}>{leftActionText}</Text>
+          <Ionicons name={leftActionIcon} size={22} color="#FFFFFF" />
+        </Animated.View>
+      )}
 
-      {/* Kaydırılabilir ön içerik */}
+      {/* 🔵 Sağa çekilince sol arkada görünen alan ("Düzenle") */}
+      {onSwipeRight && (
+        <Animated.View
+          style={[
+            styles.actionBackground,
+            styles.leftAction,
+            {
+              backgroundColor: rightActionColor,
+              opacity: leftBackgroundOpacity,
+            },
+          ]}
+        >
+          <Ionicons name={rightActionIcon} size={22} color="#FFFFFF" />
+          <Text style={styles.actionText}>{rightActionText}</Text>
+        </Animated.View>
+      )}
+
+      {/* Kaydırılabilir ön kart (İçeriğin yüksekliğini doğrudan alır) */}
       <Animated.View
         {...panResponder.panHandlers}
         style={[
@@ -111,11 +140,12 @@ export function NoteSwipeableItem({
 const styles = StyleSheet.create({
   cardWrapper: {
     position: "relative",
-    marginBottom: 12,
+    marginBottom: 12, // Kartlar arası boşluk sadece burada olmalı
     borderRadius: 12,
     overflow: "hidden",
+    backgroundColor: "transparent",
   },
-  hiddenActionBackground: {
+  actionBackground: {
     position: "absolute",
     top: 0,
     bottom: 0,
@@ -124,6 +154,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  rightAction: {
+    right: 0,
+    justifyContent: "flex-end",
+  },
+  leftAction: {
+    left: 0,
+    justifyContent: "flex-start",
   },
   actionText: {
     color: "#FFFFFF",
@@ -131,7 +170,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   animatedCardContainer: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 12,
+    backgroundColor: "#FFFFFF", // Kartın kendi arka planı ile çakışmaması için
   },
 });
