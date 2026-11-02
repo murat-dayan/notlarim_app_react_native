@@ -36,6 +36,26 @@ export function getDb() {
         console.error("Migration hatası:", error);
       }
 
+      try {
+        const tableInfo = await db.getAllAsync<{ name: string }>(
+          "PRAGMA table_info(notes)",
+        );
+
+        const hasPinnedColumn = tableInfo.some(
+          (col) => col.name === "is_pinned",
+        );
+
+        if (!hasPinnedColumn) {
+          // Varsayılan olarak 0 (sabitlenmemiş) atanır
+          await db.execAsync(
+            "ALTER TABLE notes ADD COLUMN is_pinned INTEGER DEFAULT 0;",
+          );
+          console.log("Migration başarılı: 'is_pinned' sütunu eklendi.");
+        }
+      } catch (error) {
+        console.error("Migration hatası (is_pinned):", error);
+      }
+
       return db;
     })();
   }

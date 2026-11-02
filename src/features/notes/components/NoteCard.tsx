@@ -1,4 +1,5 @@
 import { Colors } from "@/constants/colors";
+import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Note } from "../types";
 
@@ -6,6 +7,7 @@ type Props = {
   note: Note;
   onPress: () => void;
   onLongPress: () => void;
+  onTogglePin: () => void;
   isSelected: boolean;
   isSelectionMode: boolean;
 };
@@ -14,6 +16,7 @@ export function NoteCard({
   note,
   onPress,
   onLongPress,
+  onTogglePin,
   isSelected,
   isSelectionMode,
 }: Props) {
@@ -40,11 +43,36 @@ export function NoteCard({
       />
 
       <View style={styles.textContainer}>
-        {/* Başlık */}
-        <Text style={styles.title} numberOfLines={1}>
-          {note.title || "Başlıksız Not"}
-        </Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.title} numberOfLines={1}>
+            {note.title || "Başlıksız Not"}
+          </Text>
 
+          {/* 🔥 SEÇİM MODUNDAYSA SAĞ ÜSTTE PIN İKONU BELİRİR */}
+          {isSelectionMode ? (
+            <Pressable
+              onPress={(e) => {
+                e.stopPropagation(); // Kartın seçilmesini engeller, doğrudan pinler
+                onTogglePin();
+              }}
+              style={styles.selectionPinButton}
+              hitSlop={8}
+            >
+              <Ionicons
+                name={note.isPinned ? "pin" : "pin-outline"}
+                size={16}
+                color={Colors.primary}
+              />
+            </Pressable>
+          ) : (
+            /* Normal durum: Sadece pinlenmişse minik rozet görünür */
+            note.isPinned && (
+              <View style={styles.pinnedBadge}>
+                <Ionicons name="pin" size={13} color={Colors.primary} />
+              </View>
+            )
+          )}
+        </View>
         {/* İçerik */}
         <Text style={styles.content} numberOfLines={2}>
           {note.content || "İçerik bulunmuyor..."}
@@ -127,12 +155,28 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingLeft: 14,
   },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+  },
   title: {
+    flex: 1,
     fontSize: 17,
     fontWeight: "700",
     color: "#0f172a",
     letterSpacing: -0.2,
-    marginBottom: 6,
+  },
+  // 🔥 Yeni eklenen minik pin rozeti stili
+  pinnedBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.background,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 8,
   },
   content: {
     fontSize: 14,
@@ -146,6 +190,17 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 6,
     marginBottom: 10,
+  },
+  selectionPinButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: Colors.primary + "15",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 8,
+    borderWidth: 1,
+    borderColor: Colors.primary + "30",
   },
   tagBadge: {
     backgroundColor: "#F1F5F9",

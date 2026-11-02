@@ -48,6 +48,8 @@ export function NotesListScreen() {
   const clearSelection = useNotesStore((s) => s.clearSelection);
   const deleteSelectedNotes = useNotesStore((s) => s.deleteSelectedNotes);
 
+  const togglePinNote = useNotesStore((s) => s.togglePinNote);
+
   if (isLoading) {
     return <NoteLoadingView />;
   }
@@ -70,6 +72,9 @@ export function NotesListScreen() {
       return matchesSearch && matchesTag;
     })
     .sort((a, b) => {
+      if (Boolean(b.isPinned) !== Boolean(a.isPinned)) {
+        return (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0);
+      }
       if (sortBy === "en yeniler") {
         return (
           new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
@@ -316,7 +321,11 @@ export function NotesListScreen() {
               isSelected={isSelected}
               isSelectionMode={isSelectionMode}
               onPress={() => handleCardPress(item.id)}
-              onLongPress={() => toggleSelectNote(item.id)}
+              onLongPress={() => toggleSelectNote(item.id)} // Uzun basınca normal seçim modu açılır
+              onTogglePin={() => {
+                togglePinNote(item.id); // Notu pinler
+                clearSelection(); // Seçim modundan çıkar
+              }}
             />
           );
         }}

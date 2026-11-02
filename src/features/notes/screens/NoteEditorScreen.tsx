@@ -15,7 +15,6 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { NoteButton } from "../components/NoteButton";
 import { NoteCustomHeader } from "../components/NoteCustomHeader";
 import { NoteTextInput } from "../components/NoteTextInput";
 import { useNotesStore } from "../store/useNotesStore";
@@ -119,6 +118,10 @@ export function NoteEditorScreen() {
           <Ionicons name="arrow-back" size={20} color={Colors.textMain} />
         }
         onLeftPress={router.back}
+        rightIcon={
+          <Ionicons name="save" size={20} color={Colors.textSecondary} />
+        }
+        onRightPress={handleSave}
       />
 
       <NoteTextInput
@@ -244,27 +247,12 @@ export function NoteEditorScreen() {
           </Pressable>
         </View>
       </View>
-
-      <View style={[styles.buttons, { paddingBottom: insets.bottom + 45 }]}>
-        {id && (
-          <NoteButton title="Sil" onPress={handleDelete} variant="secondary" />
-        )}
-        <NoteButton title="Kaydet" onPress={handleSave} variant="primary" />
-      </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: Colors.background },
-  titleInput: {
-    fontSize: 20,
-    fontWeight: "600",
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    marginBottom: 12,
-  },
   tagsSection: {
     marginBottom: 12,
   },
@@ -339,24 +327,6 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "600",
-  },
-  contentInput: { flex: 1, fontSize: 16 },
-  buttons: {
-    flexDirection: "row",
-    gap: 12,
-    paddingTop: 12,
-    width: "100%",
-    justifyContent: "center",
-  },
-  contentIconWrapper: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: Colors.primary + "15", // Çok hafif şeffaf ana renk arka planı
-    justifyContent: "center",
-    alignItems: "center",
-    alignSelf: "flex-start", // Üst kısma sabitlenir
-    marginTop: 4,
   },
   editorContainer: {
     flex: 1,

@@ -5,4 +5,5 @@ export type Note = {
   tags?: string[];
   createdAt: number;
   updatedAt: number;
+  isPinned: boolean;
 };

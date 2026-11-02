@@ -8,6 +8,7 @@ type NoteRow = {
   tags: string | null;
   created_at: number;
   updated_at: number;
+  is_pinned: number;
 };
 
 const toNote = (row: NoteRow): Note => ({
@@ -17,13 +18,14 @@ const toNote = (row: NoteRow): Note => ({
   tags: row.tags ? JSON.parse(row.tags) : [],
   createdAt: row.created_at,
   updatedAt: row.updated_at,
+  isPinned: Boolean(row.is_pinned),
 });
 
 export const notesRepository = {
   async getAll(): Promise<Note[]> {
     const db = await getDb();
     const rows = await db.getAllAsync<NoteRow>(
-      "SELECT * FROM notes ORDER BY updated_at DESC",
+      "SELECT * FROM notes ORDER BY is_pinned DESC, updated_at DESC",
     );
     return rows.map(toNote);
   },
@@ -33,7 +35,7 @@ export const notesRepository = {
     const tagsJson = JSON.stringify(note.tags || []); // Diziyi JSON metnine çeviriyoruz
 
     await db.runAsync(
-      "INSERT INTO notes (id, title, content, tags, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+      "INSERT INTO notes (id, title, content, tags, created_at,updated_at , is_pinned) VALUES (?, ?, ?, ?, ?, ?,?)",
       [
         note.id,
         note.title,
@@ -41,6 +43,7 @@ export const notesRepository = {
         tagsJson,
         note.createdAt,
         note.updatedAt,
+        note.isPinned ? 1 : 0,
       ],
     );
   },
@@ -65,5 +68,14 @@ export const notesRepository = {
     const db = await getDb();
     const placeholders = ids.map(() => "?").join(",");
     await db.runAsync(`DELETE FROM notes WHERE id IN (${placeholders})`, ids);
+  },
+
+  async togglePin(id: string, isPinned: boolean) {
+    const db = await getDb();
+    await db.runAsync(
+      "UPDATE notes SET is_pinned = ? WHERE id = ?",
+      isPinned ? 1 : 0,
+      id,
+    );
   },
 };

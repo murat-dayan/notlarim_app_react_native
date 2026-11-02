@@ -16,6 +16,7 @@ export type NoteSlice = {
   ) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   deleteSelectedNotes: () => Promise<void>;
+  togglePinNote: (id: string) => Promise<void>;
 };
 
 export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
@@ -39,6 +40,7 @@ export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
       tags,
       createdAt: now,
       updatedAt: now,
+      isPinned: false,
     };
 
     await notesRepository.insert(yeniNot);
@@ -76,6 +78,23 @@ export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
     await notesRepository.removeMany(selectedNoteIds);
     set((state) => ({
       notes: state.notes.filter((n) => !selectedNoteIds.includes(n.id)),
+    }));
+  },
+
+  togglePinNote: async (id: string) => {
+    const hedefNot = get().notes.find((n) => n.id === id);
+    if (!hedefNot) return;
+
+    const yeniPinDurumu = !hedefNot.isPinned;
+
+    // Veritabanını güncelle
+    await notesRepository.togglePin(id, yeniPinDurumu);
+
+    // State'i güncelle
+    set((state) => ({
+      notes: state.notes.map((n) =>
+        n.id === id ? { ...n, isPinned: yeniPinDurumu } : n,
+      ),
     }));
   },
 });
