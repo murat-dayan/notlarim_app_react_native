@@ -10,6 +10,7 @@ export type UiSlice = {
   isSortMenuOpen: boolean;
   sortBy: SortType;
   selectedTagFilter: string | null;
+  zenDraftContent: string | null;
 
   setSearchQuery: (query: string) => void;
   toggleSelectNote: (id: string) => void;
@@ -20,6 +21,7 @@ export type UiSlice = {
   closeSortMenu: () => void;
   setSortBy: (sort: SortType) => void;
   setSelectedTagFilter: (tag: string | null) => void;
+  setZenDraftContent: (content: string | null) => void; // 🔥 Taslak içeriği güncelleme/temizleme fonksiyonu
 };
 
 export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (
@@ -33,6 +35,7 @@ export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (
   isSortMenuOpen: false,
   sortBy: "en yeniler",
   selectedTagFilter: null,
+  zenDraftContent: null, // Başlangıçta boş
 
   setSearchQuery: (query) => set({ searchQuery: query }),
 
@@ -83,4 +86,6 @@ export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (
   setSortBy: (sort) => set({ sortBy: sort }),
 
   setSelectedTagFilter: (tag) => set({ selectedTagFilter: tag }),
+
+  setZenDraftContent: (content) => set({ zenDraftContent: content }),
 });

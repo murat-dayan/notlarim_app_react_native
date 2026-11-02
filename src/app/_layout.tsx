@@ -38,6 +38,7 @@ export default function RootLayout() {
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="editor" options={{ headerShown: false }} />
       <Stack.Screen name="locked-notes" options={{ headerShown: false }} />
+      <Stack.Screen name="zen-editor" options={{ headerShown: false }} />
     </Stack>
   );
 }

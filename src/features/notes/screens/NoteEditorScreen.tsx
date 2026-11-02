@@ -1,8 +1,8 @@
 import { Colors } from "@/constants/colors";
 import { getCurrentFormattedTime } from "@/utils/dateUtils";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -114,6 +114,19 @@ export function NoteEditorScreen() {
   };
 
   const characterCount = content.length;
+
+  const zenDraftContent = useNotesStore((s) => s.zenDraftContent);
+  const clearZenDraft = useNotesStore((s) => s.setZenDraftContent);
+
+  // 🔥 Zen sayfasından geri dönüldüğünde içeriği yakalayıp state'e işliyoruz
+  useFocusEffect(
+    useCallback(() => {
+      if (zenDraftContent !== null && zenDraftContent !== undefined) {
+        setContent(zenDraftContent);
+        clearZenDraft(null); // Temizle ki tekrar tetiklenmesin
+      }
+    }, [zenDraftContent]),
+  );
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior="padding">
@@ -285,6 +298,22 @@ export function NoteEditorScreen() {
           <Pressable style={styles.toolbarButton} onPress={handleAddBullet}>
             <Ionicons name="list" size={18} color={currentPrimaryColor} />
             <Text style={styles.toolbarButtonText}>Madde Ekle</Text>
+          </Pressable>
+          <Pressable
+            style={styles.toolbarButton}
+            onPress={() =>
+              router.push({
+                pathname: "/zen-editor",
+                params: { currentContent: content },
+              })
+            }
+          >
+            <Ionicons
+              name="expand-outline"
+              size5={18}
+              color={currentPrimaryColor}
+            />
+            <Text style={styles.toolbarButtonText}>Zen Modu</Text>
           </Pressable>
         </View>
       </View>
