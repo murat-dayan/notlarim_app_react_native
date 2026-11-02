@@ -16,6 +16,16 @@ type Props = {
   onClose: () => void;
 };
 
+// 🔥 Seçilebilir renk paleti
+const PRESET_COLORS = [
+  "#6366F1", // İndigo (Varsayılan)
+  "#EF4444", // Kırmızı (İş vb.)
+  "#10B981", // Yeşil (Finans/Doğa)
+  "#F59E0B", // Turuncu/Sarı
+  "#8B5CF6", // Mor
+  "#EC4899", // Pembe
+];
+
 export function NoteWorkspaceModal({ visible, onClose }: Props) {
   const workspaces = useNotesStore((s) => s.workspaces);
   const activeWorkspaceId = useNotesStore((s) => s.activeWorkspaceId);
@@ -25,12 +35,22 @@ export function NoteWorkspaceModal({ visible, onClose }: Props) {
 
   const [isCreating, setIsCreating] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
+  const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[0]); // 🔥 Seçilen renk
 
   const handleCreate = async () => {
     if (!newWorkspaceName.trim()) return;
-    await addWorkspace(newWorkspaceName.trim(), "#3b82f6", "folder-outline");
+
+    // 🔥 Seçilen rengi ve ikonu store'a net bir şekilde gönderiyoruz
+    await addWorkspace(
+      newWorkspaceName.trim(),
+      selectedColor,
+      "folder-outline",
+    );
+
     setNewWorkspaceName("");
+    setSelectedColor(PRESET_COLORS[0]);
     setIsCreating(false);
+    onClose(); // Ekledikten sonra modalı kapatabiliriz
   };
 
   return (
@@ -56,25 +76,37 @@ export function NoteWorkspaceModal({ visible, onClose }: Props) {
           <View style={styles.list}>
             {workspaces.map((workspace) => {
               const isActive = workspace.id === activeWorkspaceId;
+              const workspaceColor = workspace.color || Colors.primary;
+
               return (
                 <Pressable
                   key={workspace.id}
-                  style={[styles.workspaceItem, isActive && styles.activeItem]}
+                  style={[
+                    styles.workspaceItem,
+                    isActive && {
+                      backgroundColor: `${workspaceColor}10`,
+                      borderColor: workspaceColor,
+                    },
+                  ]}
                   onPress={() => {
                     setActiveWorkspaceId(workspace.id);
                     onClose();
                   }}
                 >
                   <View style={styles.workspaceInfo}>
-                    <Ionicons
-                      name={workspace.icon as any}
-                      size={20}
-                      color={isActive ? Colors.primary : Colors.textMuted}
+                    <View
+                      style={[
+                        styles.colorIndicator,
+                        { backgroundColor: workspaceColor },
+                      ]}
                     />
                     <Text
                       style={[
                         styles.workspaceText,
-                        isActive && styles.activeText,
+                        isActive && {
+                          color: workspaceColor,
+                          fontWeight: "600",
+                        },
                       ]}
                     >
                       {workspace.name}
@@ -86,7 +118,7 @@ export function NoteWorkspaceModal({ visible, onClose }: Props) {
                       <Ionicons
                         name="checkmark-circle"
                         size={20}
-                        color={Colors.primary}
+                        color={workspaceColor}
                       />
                     )}
                     {workspaces.length > 1 && (
@@ -112,12 +144,31 @@ export function NoteWorkspaceModal({ visible, onClose }: Props) {
             <View style={styles.createContainer}>
               <TextInput
                 style={styles.input}
-                placeholder="Çalışma Alanı Adı"
+                placeholder="Çalışma Alanı Adı (Örn: İş, Proje)"
                 placeholderTextColor={Colors.textMuted}
                 value={newWorkspaceName}
                 onChangeText={setNewWorkspaceName}
                 autoFocus
               />
+
+              {/* Renk Seçim Paleti */}
+              <View style={styles.colorPickerContainer}>
+                <Text style={styles.colorPickerLabel}>Renk Seç:</Text>
+                <View style={styles.colorRow}>
+                  {PRESET_COLORS.map((color) => (
+                    <Pressable
+                      key={color}
+                      style={[
+                        styles.colorOption,
+                        { backgroundColor: color },
+                        selectedColor === color && styles.selectedColorOption,
+                      ]}
+                      onPress={() => setSelectedColor(color)}
+                    />
+                  ))}
+                </View>
+              </View>
+
               <View style={styles.createActions}>
                 <Pressable
                   style={[styles.actionButton, styles.cancelButton]}
@@ -126,7 +177,11 @@ export function NoteWorkspaceModal({ visible, onClose }: Props) {
                   <Text style={styles.cancelButtonText}>İptal</Text>
                 </Pressable>
                 <Pressable
-                  style={[styles.actionButton, styles.saveButton]}
+                  style={[
+                    styles.actionButton,
+                    styles.saveButton,
+                    { backgroundColor: selectedColor },
+                  ]}
                   onPress={handleCreate}
                 >
                   <Text style={styles.saveButtonText}>Ekle</Text>
@@ -159,7 +214,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
-    maxHeight: "80%",
+    maxHeight: "85%",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1,
@@ -194,23 +249,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E2E8F0",
   },
-  activeItem: {
-    backgroundColor: "#EFF6FF",
-    borderColor: Colors.primary,
-  },
   workspaceInfo: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
   },
+  colorIndicator: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+  },
   workspaceText: {
     fontSize: 15,
     fontWeight: "500",
     color: Colors.textMain,
-  },
-  activeText: {
-    color: Colors.primary,
-    fontWeight: "600",
   },
   itemRight: {
     flexDirection: "row",
@@ -255,10 +307,34 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.textMain,
   },
+  colorPickerContainer: {
+    gap: 6,
+  },
+  colorPickerLabel: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: Colors.textMuted,
+  },
+  colorRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  colorOption: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  selectedColorOption: {
+    borderColor: "#1E293B",
+    transform: [{ scale: 1.1 }],
+  },
   createActions: {
     flexDirection: "row",
     justifyContent: "flex-end",
     gap: 8,
+    marginTop: 4,
   },
   actionButton: {
     paddingHorizontal: 16,

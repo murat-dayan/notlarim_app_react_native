@@ -20,14 +20,20 @@ export const createWorkspaceSlice: StateCreator<any, [], [], WorkspaceSlice> = (
 
   loadWorkspaces: async () => {
     const workspaces = await workspacesRepository.getAll();
-    set({ workspaces });
 
-    // Eğer aktif olan workspace listede yoksa güvenli bir şekilde ilkini seç
+    // Eğer kayıtlar arasında hiç renk atanmamış olan varsa varsayılan bir renk verelim
+    const formattedWorkspaces = workspaces.map((w) => ({
+      ...w,
+      color: w.color || "#6366F1", // Renk yoksa İndigo ver
+    }));
+
+    set({ workspaces: formattedWorkspaces });
+
     if (
-      workspaces.length > 0 &&
-      !workspaces.some((w) => w.id === get().activeWorkspaceId)
+      formattedWorkspaces.length > 0 &&
+      !formattedWorkspaces.some((w) => w.id === get().activeWorkspaceId)
     ) {
-      set({ activeWorkspaceId: workspaces[0].id });
+      set({ activeWorkspaceId: formattedWorkspaces[0].id });
     }
   },
 
@@ -40,13 +46,16 @@ export const createWorkspaceSlice: StateCreator<any, [], [], WorkspaceSlice> = (
     const newWorkspace: Workspace = {
       id: now.toString(),
       name,
-      color,
-      icon,
+      color: color || "#6366F1", // 🔥 Renk gelmezse varsayılan
+      icon: icon || "folder-outline",
       createdAt: now,
     };
 
     await workspacesRepository.insert(newWorkspace);
-    set((state: any) => ({ workspaces: [...state.workspaces, newWorkspace] }));
+    set((state: any) => ({
+      workspaces: [...state.workspaces, newWorkspace],
+      activeWorkspaceId: newWorkspace.id, // 🔥 Yeni eklenene anında geçiş yap!
+    }));
   },
 
   deleteWorkspace: async (id) => {

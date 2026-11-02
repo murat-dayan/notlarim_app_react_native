@@ -13,7 +13,8 @@ type NoteTextInputProps = TextInputProps & {
   error?: string;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
-  autoGrow?: boolean; // 🔥 Otomatik büyümeyi açıp kapamak için
+  autoGrow?: boolean;
+  activeColor?: string; // 🔥 Dinamik çalışma alanı rengi için prop
 };
 
 export function NoteTextInput({
@@ -26,10 +27,11 @@ export function NoteTextInput({
   onBlur,
   multiline,
   autoGrow = true,
+  activeColor = Colors.primary, // 🔥 Varsayılan olarak standart primary
   ...props
 }: NoteTextInputProps) {
   const [isFocused, setIsFocused] = useState(false);
-  const [inputHeight, setInputHeight] = useState<number>(120); // Çok satırlı için başlangıç yüksekliği
+  const [inputHeight, setInputHeight] = useState<number>(120);
 
   return (
     <View style={styles.wrapper}>
@@ -39,7 +41,11 @@ export function NoteTextInput({
         style={[
           styles.container,
           multiline && { alignItems: "flex-start", paddingVertical: 12 },
-          isFocused && styles.containerFocused,
+          // 🔥 Odaklandığında dinamik activeColor ile border ve gölge rengini güncelliyoruz
+          isFocused && [
+            styles.containerFocused,
+            { borderColor: activeColor, shadowColor: activeColor },
+          ],
           error && styles.containerError,
         ]}
       >
@@ -110,8 +116,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   containerFocused: {
-    borderColor: Colors.primary,
-    shadowColor: Colors.primary,
+    // Dinamik activeColor ile eziliyor
     shadowOpacity: 0.08,
     shadowRadius: 6,
     elevation: 2,
@@ -126,7 +131,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   multilineInput: {
-    paddingTop: 0, // Üst boşluğu sıfırlayarak tam yukarıdan başlatır
+    paddingTop: 0,
     textAlignVertical: "top",
   },
   inputWithLeftIcon: {

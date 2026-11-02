@@ -41,10 +41,16 @@ export function NoteEditorScreen() {
   const updateNote = useNotesStore((s) => s.updateNote);
   const deleteNote = useNotesStore((s) => s.deleteNote);
 
+  // Aktif çalışma alanı ve rengini store'dan alıyoruz
+  const activeWorkspaceId = useNotesStore((s) => s.activeWorkspaceId);
+  const workspaces = useNotesStore((s) => s.workspaces);
+  const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
+  const currentPrimaryColor = activeWorkspace?.color || Colors.primary;
+
   const [title, setTitle] = useState(existing?.title ?? "");
   const [content, setContent] = useState(existing?.content ?? "");
 
-  // 🔥 Seçilen etiketleri dizi olarak tutuyoruz
+  // Seçilen etiketleri dizi olarak tutuyoruz
   const [selectedTags, setSelectedTags] = useState<string[]>(
     existing?.tags ?? [],
   );
@@ -102,9 +108,8 @@ export function NoteEditorScreen() {
   };
 
   const handleAddBullet = () => {
-    // Eğer metin boş değilse ve son karakter yeni satır değilse alt alta şık durması için yeni satır ekleriz
     const bulletPrefix =
-      content.length > 0 && !content.endsWith("\n") ? "\n• " : "• ";
+      content.length > 0 && !content.endsWith("\n") ? "\n" : "• ";
     setContent(content + bulletPrefix);
   };
 
@@ -126,12 +131,14 @@ export function NoteEditorScreen() {
 
       <NoteTextInput
         placeholder="Başlık"
+        placeholderTextColor={currentPrimaryColor}
         label="Başlık Ekleyin"
         value={title}
         onChangeText={setTitle}
+        activeColor={currentPrimaryColor}
       />
 
-      {/* 🔥 İnteraktif Etiket Seçim Alanı */}
+      {/* İnteraktif Etiket Seçim Alanı */}
       <View style={styles.tagsSection}>
         <Text style={styles.sectionLabel}>Etiketler</Text>
         <ScrollView
@@ -144,7 +151,16 @@ export function NoteEditorScreen() {
             return (
               <TouchableOpacity
                 key={tag}
-                style={[styles.tagChip, isSelected && styles.selectedTagChip]}
+                style={[
+                  styles.tagChip,
+                  isSelected && [
+                    styles.selectedTagChip,
+                    {
+                      backgroundColor: currentPrimaryColor,
+                      borderColor: currentPrimaryColor,
+                    },
+                  ],
+                ]}
                 onPress={() => toggleTag(tag)}
                 activeOpacity={0.7}
               >
@@ -157,13 +173,20 @@ export function NoteEditorScreen() {
             );
           })}
 
-          {/* Kullanıcının kendi özel etiketleri (hazır listede olmayanlar) */}
+          {/* Kullanıcının kendi özel etiketleri */}
           {selectedTags
             .filter((t) => !PREDEFINED_TAGS.includes(t))
             .map((tag) => (
               <TouchableOpacity
                 key={tag}
-                style={[styles.tagChip, styles.selectedTagChip]}
+                style={[
+                  styles.tagChip,
+                  styles.selectedTagChip,
+                  {
+                    backgroundColor: currentPrimaryColor,
+                    borderColor: currentPrimaryColor,
+                  },
+                ]}
                 onPress={() => toggleTag(tag)}
                 activeOpacity={0.7}
               >
@@ -175,7 +198,12 @@ export function NoteEditorScreen() {
 
           {/* Yeni Özel Etiket Ekleme Butonu / Inputu */}
           {isAddingCustom ? (
-            <View style={styles.customTagInputContainer}>
+            <View
+              style={[
+                styles.customTagInputContainer,
+                { borderColor: currentPrimaryColor },
+              ]}
+            >
               <TextInput
                 style={styles.customTagInput}
                 placeholder="Etiket adı..."
@@ -187,7 +215,10 @@ export function NoteEditorScreen() {
               />
               <TouchableOpacity
                 onPress={handleAddCustomTag}
-                style={styles.addTagConfirmBtn}
+                style={[
+                  styles.addTagConfirmBtn,
+                  { backgroundColor: currentPrimaryColor },
+                ]}
               >
                 <Text style={styles.addTagConfirmText}>Ekle</Text>
               </TouchableOpacity>
@@ -204,46 +235,56 @@ export function NoteEditorScreen() {
       </View>
 
       <View style={styles.editorContainer}>
-        {/* 🔥 Üst Kısım: Tarih ve Canlı Karakter Sayacı Rozeti */}
+        {/* Üst Kısım: Tarih ve Canlı Karakter Sayacı Rozeti */}
         <View style={styles.editorHeaderMeta}>
-          <View style={styles.metaBadge}>
-            <Ionicons name="time-outline" size={13} color={Colors.textMuted} />
-            <Text style={styles.metaText}>{getCurrentFormattedTime()}</Text>
+          <View
+            style={[
+              styles.metaBadge,
+              { borderColor: currentPrimaryColor + "40" },
+            ]}
+          >
+            <Ionicons
+              name="time-outline"
+              size={13}
+              color={currentPrimaryColor}
+            />
+            <Text style={[styles.metaText, { color: currentPrimaryColor }]}>
+              {getCurrentFormattedTime()}
+            </Text>
           </View>
-          <View style={styles.metaBadge}>
-            <Ionicons name="text-outline" size={13} color={Colors.textMuted} />
-            <Text style={styles.metaText}>{characterCount} karakter</Text>
+          <View
+            style={[
+              styles.metaBadge,
+              { borderColor: currentPrimaryColor + "40" },
+            ]}
+          >
+            <Ionicons
+              name="text-outline"
+              size={13}
+              color={currentPrimaryColor}
+            />
+            <Text style={[styles.metaText, { color: currentPrimaryColor }]}>
+              {characterCount} karakter
+            </Text>
           </View>
         </View>
 
-        {/* İçerik Inputu */}
+        {/* İçerik Inputu (Orijinal yapısı bozulmadan) */}
         <NoteTextInput
           placeholder="Notunu yazmaya başla..."
+          placeholderTextColor={currentPrimaryColor}
           value={content}
           onChangeText={setContent}
           multiline
           style={{ minHeight: 250, lineHeight: 24 }}
+          activeColor={currentPrimaryColor}
         />
 
-        {/* 🔥 Alt Kısım: İşlevsel Araç Çubuğu */}
+        {/* Alt Kısım: İşlevsel Araç Çubuğu */}
         <View style={styles.editorToolbar}>
           <Pressable style={styles.toolbarButton} onPress={handleAddBullet}>
-            <Ionicons name="list" size={18} color={Colors.primary} />
+            <Ionicons name="list" size={18} color={currentPrimaryColor} />
             <Text style={styles.toolbarButtonText}>Madde Ekle</Text>
-          </Pressable>
-
-          <Pressable
-            style={styles.toolbarButton}
-            onPress={() => {
-              // İleride etiket ekleme modalını açmak için burayı bağlayabilirsin
-            }}
-          >
-            <Ionicons
-              name="pricetag-outline"
-              size={18}
-              color={Colors.textMain}
-            />
-            <Text style={styles.toolbarButtonText}>Etiket</Text>
           </Pressable>
         </View>
       </View>
@@ -276,10 +317,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  selectedTagChip: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
+  selectedTagChip: {},
   tagText: {
     fontSize: 13,
     fontWeight: "500",
@@ -308,7 +346,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: Colors.primary,
     paddingLeft: 10,
     overflow: "hidden",
   },
@@ -319,7 +356,6 @@ const styles = StyleSheet.create({
     width: 90,
   },
   addTagConfirmBtn: {
-    backgroundColor: Colors.primary,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
@@ -335,7 +371,7 @@ const styles = StyleSheet.create({
   editorHeaderMeta: {
     flexDirection: "row",
     gap: 8,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   metaBadge: {
     flexDirection: "row",
@@ -346,11 +382,9 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
   metaText: {
     fontSize: 12,
-    color: Colors.textMuted,
     fontWeight: "500",
   },
   editorToolbar: {
@@ -358,6 +392,8 @@ const styles = StyleSheet.create({
     gap: 8,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
+    paddingTop: 8,
+    marginTop: 8,
   },
   toolbarButton: {
     flexDirection: "row",

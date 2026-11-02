@@ -1,7 +1,5 @@
 import { Colors } from "@/constants/colors";
-import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, TextInput, View } from "react-native";
-import { NoteRoundIconButton } from "./NoteRoundIconButton";
 
 type Props = {
   value: string;
@@ -17,14 +15,7 @@ export function NoteSearchBar({ value, onChangeText }: Props) {
         placeholderTextColor={Colors.textMuted}
         value={value}
         onChangeText={onChangeText}
-        clearButtonMode="while-editing" // iOS için temizleme butonu
       />
-      {value.length > 0 && (
-        <NoteRoundIconButton
-          icon={<Ionicons name="close" />}
-          onPress={() => onChangeText("")}
-        />
-      )}
     </View>
   );
 }
@@ -45,11 +36,5 @@ const styles = StyleSheet.create({
     paddingRight: 45, // Sağdaki buton için boşluk
     fontSize: 15,
     color: Colors.textMain,
-  },
-  iconContainer: {
-    position: "absolute",
-    right: 8,
-    justifyContent: "center",
-    alignItems: "center",
   },
 });

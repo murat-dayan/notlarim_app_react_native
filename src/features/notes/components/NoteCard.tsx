@@ -1,6 +1,7 @@
 import { Colors } from "@/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useNotesStore } from "../store/useNotesStore";
 import { Note } from "../types";
 
 type Props = {
@@ -20,6 +21,12 @@ export function NoteCard({
   isSelected,
   isSelectionMode,
 }: Props) {
+  // 🔥 Aktif çalışma alanının rengini store'dan alıyoruz
+  const activeWorkspaceId = useNotesStore((s) => s.activeWorkspaceId);
+  const workspaces = useNotesStore((s) => s.workspaces);
+  const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
+  const currentPrimaryColor = activeWorkspace?.color || Colors.primary;
+
   const formattedDate = new Date(
     note.updatedAt || Date.now(),
   ).toLocaleDateString("tr-TR", {
@@ -31,7 +38,13 @@ export function NoteCard({
     <Pressable
       style={({ pressed }) => [
         styles.card,
-        isSelected && styles.selectedCard,
+        isSelected && [
+          styles.selectedCard,
+          {
+            borderColor: currentPrimaryColor,
+            backgroundColor: `${currentPrimaryColor}0D`,
+          }, // Hafif renk tonu
+        ],
         pressed && styles.pressedCard,
       ]}
       onPress={onPress}
@@ -39,7 +52,7 @@ export function NoteCard({
     >
       {/* Sol taraftaki şık dikey aksan çizgisi */}
       <View
-        style={[styles.accentBar, isSelected && styles.selectedAccentBar]}
+        style={[styles.accentBar, { backgroundColor: currentPrimaryColor }]}
       />
 
       <View style={styles.textContainer}>
@@ -52,38 +65,49 @@ export function NoteCard({
           {isSelectionMode ? (
             <Pressable
               onPress={(e) => {
-                e.stopPropagation(); // Kartın seçilmesini engeller, doğrudan pinler
+                e.stopPropagation();
                 onTogglePin();
               }}
-              style={styles.selectionPinButton}
+              style={[
+                styles.selectionPinButton,
+                {
+                  backgroundColor: `${currentPrimaryColor}15`,
+                  borderColor: `${currentPrimaryColor}30`,
+                },
+              ]}
               hitSlop={8}
             >
               <Ionicons
                 name={note.isPinned ? "pin" : "pin-outline"}
                 size={16}
-                color={Colors.primary}
+                color={currentPrimaryColor}
               />
             </Pressable>
           ) : (
             /* Normal durum: Sadece pinlenmişse minik rozet görünür */
             note.isPinned && (
               <View style={styles.pinnedBadge}>
-                <Ionicons name="pin" size={13} color={Colors.primary} />
+                <Ionicons name="pin" size={13} color={currentPrimaryColor} />
               </View>
             )
           )}
         </View>
+
         {/* İçerik */}
         <Text style={styles.content} numberOfLines={2}>
           {note.content || "İçerik bulunmuyor..."}
         </Text>
 
-        {/* 🔥 Etiketler (Eğer varsa alt kısımda şık haplar şeklinde görünür) */}
+        {/* 🔥 Etiketler */}
         {note.tags && note.tags.length > 0 && (
           <View style={styles.tagsContainer}>
             {note.tags.map((tag, index) => (
               <View key={index} style={styles.tagBadge}>
-                <Text style={styles.tagBadgeText}>#{tag}</Text>
+                <Text
+                  style={[styles.tagBadgeText, { color: currentPrimaryColor }]}
+                >
+                  #{tag}
+                </Text>
               </View>
             ))}
           </View>
@@ -92,7 +116,12 @@ export function NoteCard({
         {/* Alt Bilgi */}
         <View style={styles.footerRow}>
           <View style={styles.leftFooter}>
-            <View style={styles.tagIndicator} />
+            <View
+              style={[
+                styles.tagIndicator,
+                { backgroundColor: currentPrimaryColor },
+              ]}
+            />
             <Text style={styles.noteTypeLabel}>Not</Text>
           </View>
 
@@ -104,7 +133,13 @@ export function NoteCard({
               <View
                 style={[
                   styles.modernCheckbox,
-                  isSelected && styles.modernCheckedBox,
+                  isSelected && [
+                    styles.modernCheckedBox,
+                    {
+                      backgroundColor: currentPrimaryColor,
+                      borderColor: currentPrimaryColor,
+                    },
+                  ],
                 ]}
               >
                 {isSelected && <View style={styles.innerDot} />}
@@ -137,17 +172,12 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   selectedCard: {
-    borderColor: Colors.primary,
-    backgroundColor: "#F5F7FF",
+    // Dinamik renk ile eziliyor
   },
   accentBar: {
     width: 5,
-    backgroundColor: Colors.primary,
     borderTopLeftRadius: 16,
     borderBottomLeftRadius: 16,
-  },
-  selectedAccentBar: {
-    backgroundColor: "#4338ca",
   },
   textContainer: {
     flex: 1,
@@ -167,7 +197,6 @@ const styles = StyleSheet.create({
     color: "#0f172a",
     letterSpacing: -0.2,
   },
-  // 🔥 Yeni eklenen minik pin rozeti stili
   pinnedBadge: {
     width: 24,
     height: 24,
@@ -183,7 +212,6 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     marginBottom: 10,
   },
-  // 🔥 Yeni Eklenen Etiket Rozetleri Stili
   tagsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -194,12 +222,10 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: Colors.primary + "15",
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 8,
     borderWidth: 1,
-    borderColor: Colors.primary + "30",
   },
   tagBadge: {
     backgroundColor: "#F1F5F9",
@@ -212,7 +238,6 @@ const styles = StyleSheet.create({
   tagBadgeText: {
     fontSize: 11,
     fontWeight: "600",
-    color: Colors.primary,
   },
   footerRow: {
     flexDirection: "row",
@@ -231,7 +256,6 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: Colors.primary,
   },
   noteTypeLabel: {
     fontSize: 11,
@@ -259,8 +283,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   modernCheckedBox: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    // Dinamik renk ile eziliyor
   },
   innerDot: {
     width: 8,

@@ -63,6 +63,9 @@ export function NotesListScreen() {
   const [isWorkspaceModalVisible, setIsWorkspaceModalVisible] = useState(false);
   const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
 
+  // 🔥 Aktif çalışma alanının rengi (Yoksa varsayılan primary)
+  const currentPrimaryColor = activeWorkspace?.color || Colors.primary;
+
   if (isLoading) {
     return <NoteLoadingView />;
   }
@@ -129,13 +132,13 @@ export function NotesListScreen() {
   return (
     <View style={styles.container}>
       <NoteCustomHeader
-        title="Notlarım"
+        title={activeWorkspace?.name || "Notlarım"}
         rightIcon={
           <Ionicons name="add" size={20} color={Colors.textSecondary} />
-        } // 🟢 Doğru (Ionicons bileşeni)
+        }
         onRightPress={() => router.push("/editor")}
         leftIcon={
-          <Ionicons name="grid-outline" size={18} color={Colors.primary} />
+          <Ionicons name="grid-outline" size={18} color={currentPrimaryColor} />
         }
         onLeftPress={() => setIsWorkspaceModalVisible(true)}
       />
@@ -230,7 +233,10 @@ export function NotesListScreen() {
                         <Text
                           style={[
                             styles.menuText,
-                            sortBy === "en yeniler" && styles.activeMenuText,
+                            sortBy === "en yeniler" && [
+                              styles.activeMenuText,
+                              { color: currentPrimaryColor },
+                            ],
                           ]}
                         >
                           En Yeni
@@ -250,7 +256,10 @@ export function NotesListScreen() {
                         <Text
                           style={[
                             styles.menuText,
-                            sortBy === "en eskiler" && styles.activeMenuText,
+                            sortBy === "en eskiler" && [
+                              styles.activeMenuText,
+                              { color: currentPrimaryColor },
+                            ],
                           ]}
                         >
                           En Eski
@@ -270,7 +279,10 @@ export function NotesListScreen() {
                         <Text
                           style={[
                             styles.menuText,
-                            sortBy === "alfabetik" && styles.activeMenuText,
+                            sortBy === "alfabetik" && [
+                              styles.activeMenuText,
+                              { color: currentPrimaryColor },
+                            ],
                           ]}
                         >
                           Alfabetik (A-Z)
@@ -307,7 +319,13 @@ export function NotesListScreen() {
             <Pressable
               style={[
                 styles.filterChip,
-                selectedTagFilter === null && styles.activeFilterChip,
+                selectedTagFilter === null && [
+                  styles.activeFilterChip,
+                  {
+                    backgroundColor: currentPrimaryColor,
+                    borderColor: currentPrimaryColor,
+                  },
+                ],
               ]}
               onPress={() => setSelectedTagFilter(null)}
             >
@@ -328,7 +346,13 @@ export function NotesListScreen() {
                   key={tag}
                   style={[
                     styles.filterChip,
-                    isSelected && styles.activeFilterChip,
+                    isSelected && [
+                      styles.activeFilterChip,
+                      {
+                        backgroundColor: currentPrimaryColor,
+                        borderColor: currentPrimaryColor,
+                      },
+                    ],
                   ]}
                   onPress={() => setSelectedTagFilter(isSelected ? null : tag)}
                 >
@@ -376,10 +400,10 @@ export function NotesListScreen() {
               isSelected={isSelected}
               isSelectionMode={isSelectionMode}
               onPress={() => handleCardPress(item.id)}
-              onLongPress={() => toggleSelectNote(item.id)} // Uzun basınca normal seçim modu açılır
+              onLongPress={() => toggleSelectNote(item.id)}
               onTogglePin={() => {
-                togglePinNote(item.id); // Notu pinler
-                clearSelection(); // Seçim modundan çıkar
+                togglePinNote(item.id);
+                clearSelection();
               }}
             />
           );
@@ -457,10 +481,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E2E8F0",
   },
-  activeFilterChip: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
+  activeFilterChip: {},
   filterChipText: {
     fontSize: 13,
     fontWeight: "600",

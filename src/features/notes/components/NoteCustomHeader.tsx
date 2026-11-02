@@ -1,6 +1,7 @@
 import { Colors } from "@/constants/colors";
 import React, { useEffect, useRef, useState } from "react";
 import { Animated, LayoutChangeEvent, StyleSheet, View } from "react-native";
+import { useNotesStore } from "../store/useNotesStore";
 import { NoteRoundIconButton } from "./NoteRoundIconButton";
 import { NoteText } from "./NoteText";
 
@@ -21,6 +22,12 @@ export function NoteCustomHeader({
   onLeftPress,
   leftIcon,
 }: CustomHeaderProps) {
+  // 🔥 Aktif çalışma alanının rengini store'dan alıyoruz
+  const activeWorkspaceId = useNotesStore((s) => s.activeWorkspaceId);
+  const workspaces = useNotesStore((s) => s.workspaces);
+  const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
+  const currentPrimaryColor = activeWorkspace?.color || Colors.primary;
+
   const swing = useRef(new Animated.Value(1)).current;
   const [groupHeight, setGroupHeight] = useState(0);
 
@@ -64,12 +71,41 @@ export function NoteCustomHeader({
         <View style={[styles.rope, styles.ropeRight]} />
 
         {/* Levha */}
-        <View style={styles.board}>
-          <View style={[styles.nail, styles.nailLeft]} />
-          <View style={[styles.nail, styles.nailRight]} />
+        <View
+          style={[
+            styles.board,
+            {
+              borderColor: currentPrimaryColor + "40",
+              shadowColor: currentPrimaryColor,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.nail,
+              styles.nailLeft,
+              {
+                backgroundColor: currentPrimaryColor,
+                borderColor: Colors.border,
+              },
+            ]}
+          />
+          <View
+            style={[
+              styles.nail,
+              styles.nailRight,
+              {
+                backgroundColor: currentPrimaryColor,
+                borderColor: Colors.border,
+              },
+            ]}
+          />
 
           {/* Dikiş çizgisi */}
-          <View pointerEvents="none" style={styles.stitch} />
+          <View
+            pointerEvents="none"
+            style={[styles.stitch, { borderColor: currentPrimaryColor + "55" }]}
+          />
 
           {/* Sol İkon (Varsa görünür) */}
           <View style={styles.leftContainer}>
@@ -83,7 +119,7 @@ export function NoteCustomHeader({
             <NoteText
               variant="h1"
               fontFamily="BuildStorm"
-              style={styles.titleText}
+              style={[styles.titleText, { color: currentPrimaryColor }]}
               numberOfLines={1}
             >
               {title}
@@ -96,7 +132,7 @@ export function NoteCustomHeader({
               <NoteRoundIconButton
                 icon={rightIcon}
                 onPress={onRightPress}
-                style={{ backgroundColor: Colors.primary }}
+                style={{ backgroundColor: currentPrimaryColor }}
               />
             )}
           </View>
@@ -111,9 +147,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     paddingBottom: 8,
   },
-  hangingGroup: {
-    // ipler en üstten başlasın diye üst boşluk yok
-  },
+  hangingGroup: {},
   rope: {
     position: "absolute",
     top: 0,
@@ -134,9 +168,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     backgroundColor: Colors.background,
     borderRadius: 24,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    shadowColor: Colors.primary,
+    borderWidth: 1.5,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.15,
     shadowRadius: 18,
@@ -148,9 +180,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: Colors.primary,
     borderWidth: 2,
-    borderColor: Colors.border,
   },
   nailLeft: { left: 20 },
   nailRight: { right: 20 },
@@ -163,15 +193,14 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1.5,
     borderStyle: "dashed",
-    borderColor: Colors.primary + "55", // 6 haneli hex olmalı
   },
   leftContainer: {
-    minWidth: 40, // İkon olmasa bile yer tutar
+    minWidth: 40,
     alignItems: "flex-start",
     zIndex: 2,
   },
   rightContainer: {
-    minWidth: 40, // İkon olmasa bile yer tutar
+    minWidth: 40,
     alignItems: "flex-end",
     zIndex: 2,
   },
@@ -185,7 +214,6 @@ const styles = StyleSheet.create({
   },
   titleText: {
     letterSpacing: -1,
-    color: Colors.textMain,
     textAlign: "center",
   },
 });
