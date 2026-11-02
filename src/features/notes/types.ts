@@ -6,4 +6,5 @@ export type Note = {
   createdAt: number;
   updatedAt: number;
   isPinned: boolean;
+  isLocked: boolean;
 };

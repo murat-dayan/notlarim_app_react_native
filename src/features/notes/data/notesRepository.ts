@@ -9,6 +9,7 @@ type NoteRow = {
   created_at: number;
   updated_at: number;
   is_pinned: number;
+  is_locked: number;
 };
 
 const toNote = (row: NoteRow): Note => ({
@@ -19,6 +20,7 @@ const toNote = (row: NoteRow): Note => ({
   createdAt: row.created_at,
   updatedAt: row.updated_at,
   isPinned: Boolean(row.is_pinned),
+  isLocked: Boolean(row.is_locked),
 });
 
 export const notesRepository = {
@@ -35,7 +37,7 @@ export const notesRepository = {
     const tagsJson = JSON.stringify(note.tags || []); // Diziyi JSON metnine çeviriyoruz
 
     await db.runAsync(
-      "INSERT INTO notes (id, title, content, tags, created_at,updated_at , is_pinned) VALUES (?, ?, ?, ?, ?, ?,?)",
+      "INSERT INTO notes (id, title, content, tags, created_at,updated_at , is_pinned, is_locked) VALUES (?, ?, ?, ?, ?, ?,?,?)",
       [
         note.id,
         note.title,
@@ -44,6 +46,7 @@ export const notesRepository = {
         note.createdAt,
         note.updatedAt,
         note.isPinned ? 1 : 0,
+        note.isLocked ? 1 : 0,
       ],
     );
   },
@@ -75,6 +78,15 @@ export const notesRepository = {
     await db.runAsync(
       "UPDATE notes SET is_pinned = ? WHERE id = ?",
       isPinned ? 1 : 0,
+      id,
+    );
+  },
+
+  async toggleLock(id: string, isLocked: boolean) {
+    const db = await getDb();
+    await db.runAsync(
+      "UPDATE notes SET is_locked = ? WHERE id = ?",
+      isLocked ? 1 : 0,
       id,
     );
   },

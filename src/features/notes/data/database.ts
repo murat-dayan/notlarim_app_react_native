@@ -56,6 +56,25 @@ export function getDb() {
         console.error("Migration hatası (is_pinned):", error);
       }
 
+      try {
+        const tableInfo = await db.getAllAsync<{ name: string }>(
+          "PRAGMA table_info(notes)",
+        );
+
+        const hasLockedColumn = tableInfo.some(
+          (col) => col.name === "is_locked",
+        );
+
+        if (!hasLockedColumn) {
+          await db.execAsync(
+            "ALTER TABLE notes ADD COLUMN is_locked INTEGER DEFAULT 0;",
+          );
+          console.log("Migration başarılı: 'is_locked' sütunu eklendi.");
+        }
+      } catch (error) {
+        console.error("Migration hatası (is_locked):", error);
+      }
+
       return db;
     })();
   }
