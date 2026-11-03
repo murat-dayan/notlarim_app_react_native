@@ -11,6 +11,7 @@ type NoteRow = {
   is_pinned: number;
   is_locked: number;
   workspace_id: string;
+  audio_uri: string | null;
 };
 
 const toNote = (row: NoteRow): Note => ({
@@ -23,6 +24,7 @@ const toNote = (row: NoteRow): Note => ({
   isPinned: Boolean(row.is_pinned),
   isLocked: Boolean(row.is_locked),
   workspaceId: row.workspace_id || "default",
+  audioUri: row.audio_uri || undefined,
 });
 
 export const notesRepository = {
@@ -39,7 +41,7 @@ export const notesRepository = {
     const tagsJson = JSON.stringify(note.tags || []); // Diziyi JSON metnine çeviriyoruz
 
     await db.runAsync(
-      "INSERT INTO notes (id, title, content, tags, created_at,updated_at , is_pinned, is_locked, workspace_id) VALUES (?,?, ?, ?, ?, ?, ?,?,?)",
+      "INSERT INTO notes (id, title, content, tags, created_at,updated_at , is_pinned, is_locked, workspace_id, audio_uri) VALUES (?,?,?, ?, ?, ?, ?, ?,?,?)",
       [
         note.id,
         note.title,
@@ -50,6 +52,7 @@ export const notesRepository = {
         note.isPinned ? 1 : 0,
         note.isLocked ? 1 : 0,
         note.workspaceId || "default",
+        note.audioUri || null,
       ],
     );
   },
@@ -59,13 +62,14 @@ export const notesRepository = {
     const tagsJson = JSON.stringify(note.tags || []);
 
     await db.runAsync(
-      "UPDATE notes SET title = ?, content = ?, tags = ?, updated_at, workspace_id =? = ? WHERE id = ?",
+      "UPDATE notes SET title = ?, content = ?, tags = ?, updated_at = ?, workspace_id = ?, audio_uri = ? WHERE id = ?",
       [
         note.title,
         note.content,
         tagsJson,
         note.updatedAt,
         note.workspaceId,
+        note.audioUri || null,
         note.id,
       ],
     );

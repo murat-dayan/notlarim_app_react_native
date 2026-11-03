@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { NoteAudioPlayerBubble } from "../components/NoteAudioPlayerBubble";
 import { NoteCustomHeader } from "../components/NoteCustomHeader";
 import { NoteTextInput } from "../components/NoteTextInput";
 import { useNotesStore } from "../store/useNotesStore";
@@ -59,6 +60,14 @@ export function NoteEditorScreen() {
   const [customTagInput, setCustomTagInput] = useState("");
   const [isAddingCustom, setIsAddingCustom] = useState(false);
 
+  const zenDraftContent = useNotesStore((s) => s.zenDraftContent);
+  const zenDraftAudioUri = useNotesStore((s) => s.zenDraftAudioUri);
+  const clearZenDraft = useNotesStore((s) => s.setZenDraftContent);
+
+  const [audioUri, setAudioUri] = useState<string | null>(
+    existing?.audioUri ?? null,
+  );
+
   // Etiket seçme / kaldırma mantığı
   const toggleTag = (tag: string) => {
     if (selectedTags.includes(tag)) {
@@ -79,15 +88,15 @@ export function NoteEditorScreen() {
   };
 
   const handleSave = async () => {
-    if (!title.trim() && !content.trim()) {
+    if (!title.trim() && !content.trim() && !audioUri) {
       router.back();
       return;
     }
 
     if (id) {
-      await updateNote(id, title, content, selectedTags);
+      await updateNote(id, title, content, selectedTags, audioUri);
     } else {
-      await addNote(title, content, selectedTags);
+      await addNote(title, content, selectedTags, audioUri);
     }
     router.back();
   };
@@ -115,17 +124,16 @@ export function NoteEditorScreen() {
 
   const characterCount = content.length;
 
-  const zenDraftContent = useNotesStore((s) => s.zenDraftContent);
-  const clearZenDraft = useNotesStore((s) => s.setZenDraftContent);
-
-  // 🔥 Zen sayfasından geri dönüldüğünde içeriği yakalayıp state'e işliyoruz
   useFocusEffect(
     useCallback(() => {
       if (zenDraftContent !== null && zenDraftContent !== undefined) {
         setContent(zenDraftContent);
-        clearZenDraft(null); // Temizle ki tekrar tetiklenmesin
+        if (zenDraftAudioUri) {
+          setAudioUri(zenDraftAudioUri);
+        }
+        clearZenDraft(null, null); // Temizle
       }
-    }, [zenDraftContent]),
+    }, [zenDraftContent, zenDraftAudioUri]),
   );
 
   return (
@@ -282,6 +290,21 @@ export function NoteEditorScreen() {
           </View>
         </View>
 
+        {/* 🎙️ SESLİ NOT BLOKU (İçerik Akışının İçinde, Inputun Hemen Üstünde) */}
+        {audioUri && (
+          <View style={styles.inlineAudioContainer}>
+            <View style={styles.audioHeaderRow}>
+              <Ionicons name="mic" size={14} color={currentPrimaryColor} />
+              <Text
+                style={[styles.audioLabelText, { color: currentPrimaryColor }]}
+              >
+                Sesli Not
+              </Text>
+            </View>
+            <NoteAudioPlayerBubble uri={audioUri} />
+          </View>
+        )}
+
         {/* İçerik Inputu (Orijinal yapısı bozulmadan) */}
         <NoteTextInput
           placeholder="Notunu yazmaya başla..."
@@ -310,7 +333,7 @@ export function NoteEditorScreen() {
           >
             <Ionicons
               name="expand-outline"
-              size5={18}
+              size={18}
               color={currentPrimaryColor}
             />
             <Text style={styles.toolbarButtonText}>Zen Modu</Text>
@@ -325,12 +348,31 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: Colors.background },
   tagsSection: {
     marginBottom: 12,
+    paddingHorizontal: 16,
   },
   sectionLabel: {
     fontSize: 12,
     fontWeight: "600",
     color: Colors.textMuted,
     marginBottom: 6,
+  },
+  inlineAudioContainer: {
+    backgroundColor: Colors.card,
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  audioHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 6,
+  },
+  audioLabelText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
   tagsContainer: {
     flexDirection: "row",

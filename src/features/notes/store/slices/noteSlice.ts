@@ -7,12 +7,18 @@ export type NoteSlice = {
   notes: Note[];
   isLoading: boolean;
   loadNotes: () => Promise<void>;
-  addNote: (title: string, content: string, tags: string[]) => Promise<void>;
+  addNote: (
+    title: string,
+    content: string,
+    tags: string[],
+    audioUri?: string | null,
+  ) => Promise<void>;
   updateNote: (
     id: string,
     title: string,
     content: string,
     tags: string[],
+    audioUri?: string | null,
   ) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   deleteSelectedNotes: () => Promise<void>;
@@ -32,9 +38,9 @@ export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
     set({ notes, isLoading: false });
   },
 
-  addNote: async (title, content, tags) => {
+  addNote: async (title, content, tags, audioUri = null) => {
     const now = Date.now();
-    const activeWorkspaceId = (get() as any).activeWorkspaceId || "default"; // 🔥 Aktif çalışma alanını alıyoruz
+    const activeWorkspaceId = (get() as any).activeWorkspaceId || "default";
     const yeniNot: Note = {
       id: now.toString(),
       title,
@@ -45,13 +51,14 @@ export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
       isPinned: false,
       isLocked: false,
       workspaceId: activeWorkspaceId,
+      audioUri: audioUri || undefined, // 🔥 audioUri eklendi
     };
 
     await notesRepository.insert(yeniNot);
     set((state) => ({ notes: [yeniNot, ...state.notes] }));
   },
 
-  updateNote: async (id, title, content, tags) => {
+  updateNote: async (id, title, content, tags, audioUri) => {
     const eski = get().notes.find((n) => n.id === id);
     if (!eski) return;
 
@@ -61,6 +68,7 @@ export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
       content,
       tags,
       updatedAt: Date.now(),
+      audioUri: audioUri !== undefined ? audioUri || undefined : eski.audioUri, // 🔥 Güncellendi
     };
     await notesRepository.update(guncel);
 

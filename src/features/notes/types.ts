@@ -16,4 +16,5 @@ export type Note = {
   isPinned: boolean;
   isLocked: boolean;
   workspaceId: string; // 🔥 Eklendi
+  audioUri?: string;
 };

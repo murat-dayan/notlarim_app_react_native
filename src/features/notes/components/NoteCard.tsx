@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useNotesStore } from "../store/useNotesStore";
 import { Note } from "../types";
+import { NoteAudioPlayerBubble } from "./NoteAudioPlayerBubble"; // 🔥 Ses Oynatıcı import edildi
 
 type Props = {
   note: Note;
@@ -43,7 +44,7 @@ export function NoteCard({
           {
             borderColor: currentPrimaryColor,
             backgroundColor: `${currentPrimaryColor}0D`,
-          }, // Hafif renk tonu
+          },
         ],
         pressed && styles.pressedCard,
       ]}
@@ -97,6 +98,13 @@ export function NoteCard({
         <Text style={styles.content} numberOfLines={2}>
           {note.content || "İçerik bulunmuyor..."}
         </Text>
+
+        {/* 🎙️ SESLİ NOT OYNATICISI (Eğer notta ses varsa kart içinde görünür) */}
+        {note.audioUri && (
+          <View style={styles.audioBubbleWrapper}>
+            <NoteAudioPlayerBubble uri={note.audioUri} />
+          </View>
+        )}
 
         {/* 🔥 Etiketler */}
         {note.tags && note.tags.length > 0 && (
@@ -210,6 +218,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#475569",
     lineHeight: 21,
+    marginBottom: 8,
+  },
+  audioBubbleWrapper: {
     marginBottom: 10,
   },
   tagsContainer: {

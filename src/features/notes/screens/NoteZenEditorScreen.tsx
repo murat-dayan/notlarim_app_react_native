@@ -1,6 +1,13 @@
 import { Colors } from "@/constants/colors";
 import { getCurrentFormattedTime } from "@/utils/dateUtils";
 import { Ionicons } from "@expo/vector-icons";
+import {
+  AudioModule,
+  RecordingPresets,
+  setAudioModeAsync,
+  useAudioRecorder,
+} from "expo-audio";
+import { File, Paths } from "expo-file-system";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -14,6 +21,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { NoteAudioPlayerBubble } from "../components/NoteAudioPlayerBubble"; // 🔥 Zen modda dinlemek için
 import { useNotesStore } from "../store/useNotesStore";
 
 const BUBBLE_COUNT = 7;
@@ -36,7 +44,12 @@ export function NoteZenEditorScreen() {
   const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [isToolsOpen, setIsToolsOpen] = useState(false);
 
-  // 🌸 Her baloncuğun kendi animasyon değeri (sırayla açılması için)
+  // 🎙️ Ses Kayıt State'leri (expo-audio)
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordedAudioUri, setRecordedAudioUri] = useState<string | null>(null);
+
+  // 🌸 Her baloncuğun kendi animasyon değeri
   const bubbleAnims = useRef(
     Array.from({ length: BUBBLE_COUNT }, () => new Animated.Value(0)),
   ).current;
@@ -47,14 +60,12 @@ export function NoteZenEditorScreen() {
     const ordered = opening ? bubbleAnims : [...bubbleAnims].reverse();
 
     Animated.parallel([
-      // Ana buton ikonu döner
       Animated.spring(mainRotate, {
         toValue: opening ? 1 : 0,
         useNativeDriver: true,
         tension: 120,
         friction: 7,
       }),
-      // Baloncuklar sırayla: açılırken zıplayarak, kapanırken hızlıca içeri
       Animated.stagger(
         opening ? 45 : 30,
         ordered.map((anim) =>
@@ -62,8 +73,8 @@ export function NoteZenEditorScreen() {
             toValue: opening ? 1 : 0,
             useNativeDriver: true,
             tension: opening ? 140 : 180,
-            friction: opening ? 5 : 10, // düşük friction = daha çok zıplama
-            overshootClamping: !opening, // kapanırken taşma olmasın
+            friction: opening ? 5 : 10,
+            overshootClamping: !opening,
           }),
         ),
       ),
@@ -102,18 +113,68 @@ export function NoteZenEditorScreen() {
     setContent(newContent);
   };
 
+  // 🎙️ SES KAYDI BAŞLAT / DURDUR VE TEK KAYIT KONTROLÜ
+  const handleToggleVoiceRecord = async () => {
+    try {
+      if (isRecording) {
+        setIsRecording(false);
+        await audioRecorder.stop();
+        const uri = audioRecorder.uri;
+
+        if (uri) {
+          const fileName = `voice_note_${Date.now()}.m4a`;
+          const sourceFile = new File(uri);
+          const destinationFile = new File(Paths.document, fileName);
+
+          sourceFile.copy(destinationFile);
+          setRecordedAudioUri(destinationFile.uri);
+          // 🔥 Artık content içine çöp metin yazılmıyor!
+        }
+        setIsToolsOpen(false);
+      } else {
+        // 🔥 Zaten kayıtlı bir ses varsa ikinci kez kayda izin verme, uyar
+        if (recordedAudioUri) {
+          alert(
+            "Zaten bir ses kaydı mevcut. Yeni kayıt eklemek için önce mevcut kaydı silmelisiniz.",
+          );
+          return;
+        }
+
+        const permission = await AudioModule.requestRecordingPermissionsAsync();
+        if (!permission.granted) {
+          alert("Ses kaydı için mikrofon izni gereklidir!");
+          return;
+        }
+
+        await setAudioModeAsync({
+          allowsRecording: true,
+          playsInSilentMode: true,
+        });
+
+        await audioRecorder.prepareToRecordAsync();
+        audioRecorder.record();
+        setIsRecording(true);
+      }
+    } catch (err) {
+      console.error("Ses kaydı hatası:", err);
+      setIsRecording(false);
+    }
+  };
+
+  // 🔥 Kaydedilen sesi silme / iptal etme
+  const handleDeleteRecordedAudio = () => {
+    setRecordedAudioUri(null);
+  };
+
   const handleTransferAndExit = () => {
-    setZenDraftContent(content);
+    setZenDraftContent(content, recordedAudioUri);
     router.back();
   };
 
-  // 📐 Ana butona göre konumlar (x: sol = -, y: yukarı = -)
+  // Baloncuk Konumları
   const bubbles = [
-    // DİKEY SIRA: x hep 0, ana butonun tam üstünde
     { key: "b3", icon: "bookmark-outline", x: 0, y: -60, onPress: () => {} },
     { key: "b1", icon: "sparkles-outline", x: 0, y: -140, onPress: () => {} },
-
-    // YATAY SIRA: y hep 0, ana butonun tam solunda
     {
       key: "b7",
       icon: "time-outline",
@@ -122,8 +183,6 @@ export function NoteZenEditorScreen() {
       onPress: handleInsertTimestamp,
     },
     { key: "b6", icon: "happy-outline", x: -140, y: 0, onPress: () => {} },
-
-    // İÇTEKİ SERBEST BALONCUKLAR
     {
       key: "b4",
       icon: "list-outline",
@@ -132,7 +191,13 @@ export function NoteZenEditorScreen() {
       onPress: handleInsertBullet,
     },
     { key: "b5", icon: "text-outline", x: -125, y: -65, onPress: () => {} },
-    { key: "b2", icon: "flash-outline", x: -70, y: -125, onPress: () => {} },
+    {
+      key: "b2",
+      icon: isRecording ? "stop" : "volume-high",
+      x: -70,
+      y: -125,
+      onPress: handleToggleVoiceRecord,
+    },
   ];
 
   return (
@@ -152,6 +217,13 @@ export function NoteZenEditorScreen() {
           </Text>
         </View>
 
+        {isRecording && (
+          <View style={styles.recordingIndicator}>
+            <View style={styles.recordingDot} />
+            <Text style={styles.recordingText}>Kayıt Alınıyor...</Text>
+          </View>
+        )}
+
         <TouchableOpacity
           style={[
             styles.exitButton,
@@ -170,6 +242,24 @@ export function NoteZenEditorScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* 🔥 Zen Modda Kaydedilen Sesin Önizlemesi ve İptal Butonu */}
+      {recordedAudioUri && (
+        <View style={styles.zenAudioPreviewContainer}>
+          <View style={styles.zenAudioHeader}>
+            <Text style={styles.zenAudioTitle}>Sesli Not (Ekli)</Text>
+            <TouchableOpacity
+              onPress={handleDeleteRecordedAudio}
+              style={styles.deleteAudioBtn}
+              hitSlop={8}
+            >
+              <Ionicons name="trash-outline" size={16} color="#EF4444" />
+              <Text style={styles.deleteAudioText}>Kaldır</Text>
+            </TouchableOpacity>
+          </View>
+          <NoteAudioPlayerBubble uri={recordedAudioUri} />
+        </View>
+      )}
 
       {/* Ana Yazı Alanı */}
       <View style={styles.editorWrapper}>
@@ -195,13 +285,19 @@ export function NoteZenEditorScreen() {
       >
         {bubbles.map((b, i) => {
           const anim = bubbleAnims[i];
+          const isMicButton = b.key === "b2";
           return (
             <Animated.View
               key={b.key}
               style={[
                 styles.floatingBubble,
                 {
-                  borderColor: currentPrimaryColor + "40",
+                  borderColor:
+                    isRecording && isMicButton
+                      ? "#ff4d4d"
+                      : currentPrimaryColor + "40",
+                  backgroundColor:
+                    isRecording && isMicButton ? "#ffe6e6" : Colors.card,
                   opacity: anim.interpolate({
                     inputRange: [0, 0.3, 1],
                     outputRange: [0, 1, 1],
@@ -232,14 +328,16 @@ export function NoteZenEditorScreen() {
                 <Ionicons
                   name={b.icon as any}
                   size={20}
-                  color={currentPrimaryColor}
+                  color={
+                    isRecording && isMicButton ? "#ff4d4d" : currentPrimaryColor
+                  }
                 />
               </TouchableOpacity>
             </Animated.View>
           );
         })}
 
-        {/* Ana Araçlar İkonu (Tetikleyici) */}
+        {/* Ana Araçlar İkonu */}
         <TouchableOpacity
           style={[
             styles.mainToolButton,
@@ -271,7 +369,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border + "50",
@@ -290,6 +388,26 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     fontSize: 10,
   },
+  recordingIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#ffe6e6",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  recordingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#ff4d4d",
+  },
+  recordingText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#ff4d4d",
+  },
   exitButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -303,6 +421,39 @@ const styles = StyleSheet.create({
   exitText: {
     fontSize: 12,
     fontWeight: "600",
+  },
+  zenAudioPreviewContainer: {
+    backgroundColor: Colors.card,
+    borderRadius: 14,
+    padding: 10,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  zenAudioHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  zenAudioTitle: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: Colors.textMuted,
+  },
+  deleteAudioBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#FEE2E2",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  deleteAudioText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#EF4444",
   },
   editorWrapper: {
     flex: 1,
@@ -320,7 +471,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     borderWidth: 1,
     padding: 8,
-    marginBottom: 32, // alttaki baloncuklar ekran dışına taşmasın
+    marginBottom: 32,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -336,7 +487,7 @@ const styles = StyleSheet.create({
   },
   floatingBubble: {
     position: "absolute",
-    right: 8, // ana butonla tam üst üste otursun
+    right: 8,
     bottom: 8,
     width: 42,
     height: 42,

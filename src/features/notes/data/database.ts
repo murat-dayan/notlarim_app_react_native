@@ -117,6 +117,23 @@ export function getDb() {
         console.error("Migration hatası (workspace_id):", error);
       }
 
+      // Migration: 'notes' tablosuna 'audio_uri' sütununu ekle
+      try {
+        const tableInfo = await db.getAllAsync<{ name: string }>(
+          "PRAGMA table_info(notes)",
+        );
+        const hasAudioUriColumn = tableInfo.some(
+          (col) => col.name === "audio_uri",
+        );
+
+        if (!hasAudioUriColumn) {
+          await db.execAsync("ALTER TABLE notes ADD COLUMN audio_uri TEXT;");
+          console.log("Migration başarılı: 'audio_uri' sütunu eklendi.");
+        }
+      } catch (error) {
+        console.error("Migration hatası (audio_uri):", error);
+      }
+
       return db;
     })();
   }
