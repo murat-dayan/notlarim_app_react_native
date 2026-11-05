@@ -8,19 +8,27 @@ interface AudioPlayerBubbleProps {
 }
 
 export function NoteAudioPlayerBubble({ uri }: AudioPlayerBubbleProps) {
-  const player = useAudioPlayer(uri);
+  // 🔥 URI'nin geçerli olduğundan emin oluyoruz (Boş veya geçersizse oynatıcıyı kitlemez)
+  const safeUri =
+    uri.startsWith("file://") || uri.startsWith("http") ? uri : `file://${uri}`;
+
+  const player = useAudioPlayer(safeUri);
   const status = useAudioPlayerStatus(player);
 
   const handlePlayPause = async () => {
-    // Ses bittiyse başa sar
-    if (status.currentTime >= (status.duration ?? 0) - 0.1) {
-      await player.seekTo(0);
-    }
+    try {
+      // Ses bittiyse başa sar
+      if (status.currentTime >= (status.duration ?? 0) - 0.1) {
+        await player.seekTo(0);
+      }
 
-    if (status.playing) {
-      player.pause();
-    } else {
-      player.play();
+      if (status.playing) {
+        player.pause();
+      } else {
+        player.play();
+      }
+    } catch (e) {
+      console.log("Ses oynatma hatası:", e);
     }
   };
 
@@ -40,7 +48,6 @@ export function NoteAudioPlayerBubble({ uri }: AudioPlayerBubbleProps) {
   const progress =
     durationSecs > 0 ? Math.min(Math.max(currentSecs / durationSecs, 0), 1) : 0;
 
-  // Daha doğal bir ses dalgası profili için farklı oranlar
   const barHeights = [
     0.3, 0.7, 0.5, 0.9, 1.0, 0.6, 0.8, 0.4, 0.7, 0.3, 0.5, 0.9, 0.4,
   ];
@@ -59,7 +66,7 @@ export function NoteAudioPlayerBubble({ uri }: AudioPlayerBubbleProps) {
           name={status.playing ? "pause" : "play"}
           size={14}
           color="#fff"
-          style={status.playing ? {} : { marginLeft: 1.5 }} // Play ikonunun optik ortalaması
+          style={status.playing ? {} : { marginLeft: 1.5 }}
         />
       </TouchableOpacity>
 
@@ -92,7 +99,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F8FAFC", // Çok hafif modern bir gri/beyaz tonu
+    backgroundColor: "#F8FAFC",
     borderRadius: 22,
     paddingHorizontal: 12,
     paddingVertical: 8,
