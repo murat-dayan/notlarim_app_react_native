@@ -6,6 +6,12 @@ export type Workspace = {
   createdAt: number;
 };
 
+export type TodoItem = {
+  id: string;
+  text: string;
+  done: boolean;
+};
+
 export type Note = {
   id: string;
   title: string;
@@ -17,4 +23,5 @@ export type Note = {
   isLocked: boolean;
   workspaceId: string; // 🔥 Eklendi
   audioUri?: string;
+  todos?: TodoItem[];
 };

@@ -1,6 +1,6 @@
 import { StateCreator } from "zustand";
 import { notesRepository } from "../../data/notesRepository";
-import type { Note } from "../../types";
+import type { Note, TodoItem } from "../../types";
 
 // Bu dilimin tutacağı state ve fonksiyonların tipleri
 export type NoteSlice = {
@@ -12,6 +12,7 @@ export type NoteSlice = {
     content: string,
     tags: string[],
     audioUri?: string | null,
+    todos?: TodoItem[],
   ) => Promise<void>;
   updateNote: (
     id: string,
@@ -19,6 +20,7 @@ export type NoteSlice = {
     content: string,
     tags: string[],
     audioUri?: string | null,
+    todos?: TodoItem[],
   ) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   deleteSelectedNotes: () => Promise<void>;
@@ -38,7 +40,7 @@ export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
     set({ notes, isLoading: false });
   },
 
-  addNote: async (title, content, tags, audioUri = null) => {
+  addNote: async (title, content, tags, audioUri = null, todos = []) => {
     const now = Date.now();
     const activeWorkspaceId = (get() as any).activeWorkspaceId || "default";
     const yeniNot: Note = {
@@ -51,14 +53,15 @@ export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
       isPinned: false,
       isLocked: false,
       workspaceId: activeWorkspaceId,
-      audioUri: audioUri || undefined, // 🔥 audioUri eklendi
+      audioUri: audioUri || undefined,
+      todos, // 🔥 Yeni
     };
 
     await notesRepository.insert(yeniNot);
     set((state) => ({ notes: [yeniNot, ...state.notes] }));
   },
 
-  updateNote: async (id, title, content, tags, audioUri) => {
+  updateNote: async (id, title, content, tags, audioUri, todos) => {
     const eski = get().notes.find((n) => n.id === id);
     if (!eski) return;
 
@@ -68,7 +71,8 @@ export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
       content,
       tags,
       updatedAt: Date.now(),
-      audioUri: audioUri !== undefined ? audioUri || undefined : eski.audioUri, // 🔥 Güncellendi
+      audioUri: audioUri !== undefined ? audioUri || undefined : eski.audioUri,
+      todos: todos !== undefined ? todos : eski.todos, // 🔥 Yeni
     };
     await notesRepository.update(guncel);
 

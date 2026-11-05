@@ -1,5 +1,6 @@
-import { Note } from "../types";
+import { Note, TodoItem } from "../types";
 import { getDb } from "./database";
+import { todosRepository } from "./todosRepository";
 
 type NoteRow = {
   id: string;
@@ -14,7 +15,7 @@ type NoteRow = {
   audio_uri: string | null;
 };
 
-const toNote = (row: NoteRow): Note => ({
+const toNote = (row: NoteRow, todos: TodoItem[] = []): Note => ({
   id: row.id,
   title: row.title,
   content: row.content,
@@ -25,6 +26,7 @@ const toNote = (row: NoteRow): Note => ({
   isLocked: Boolean(row.is_locked),
   workspaceId: row.workspace_id || "default",
   audioUri: row.audio_uri || undefined,
+  todos,
 });
 
 export const notesRepository = {
@@ -33,7 +35,9 @@ export const notesRepository = {
     const rows = await db.getAllAsync<NoteRow>(
       "SELECT * FROM notes ORDER BY is_pinned DESC, updated_at DESC",
     );
-    return rows.map(toNote);
+    const todoMap = await todosRepository.getAllGroupedByNote();
+
+    return rows.map((row) => toNote(row, todoMap.get(row.id) ?? []));
   },
 
   async insert(note: Note): Promise<void> {
@@ -55,6 +59,9 @@ export const notesRepository = {
         note.audioUri || null,
       ],
     );
+    if (note.todos && note.todos.length > 0) {
+      await todosRepository.replaceForNote(note.id, note.todos);
+    }
   },
 
   async update(note: Note): Promise<void> {
@@ -73,6 +80,9 @@ export const notesRepository = {
         note.id,
       ],
     );
+    if (note.todos) {
+      await todosRepository.replaceForNote(note.id, note.todos);
+    }
   },
 
   async remove(id: string): Promise<void> {
@@ -81,7 +91,7 @@ export const notesRepository = {
   },
 
   async removeMany(ids: string[]): Promise<void> {
-    if (ids?.length === 0) return; // Güvenlik kontrolü
+    if (ids?.length === 0) return;
     const db = await getDb();
     const placeholders = ids.map(() => "?").join(",");
     await db.runAsync(`DELETE FROM notes WHERE id IN (${placeholders})`, ids);

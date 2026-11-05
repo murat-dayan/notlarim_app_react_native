@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useNotesStore } from "../store/useNotesStore";
 import { Note } from "../types";
-import { NoteAudioPlayerBubble } from "./NoteAudioPlayerBubble"; // 🔥 Ses Oynatıcı import edildi
+import { NoteAudioPlayerBubble } from "./NoteAudioPlayerBubble";
 
 type Props = {
   note: Note;
@@ -22,11 +22,12 @@ export function NoteCard({
   isSelected,
   isSelectionMode,
 }: Props) {
-  // 🔥 Aktif çalışma alanının rengini store'dan alıyoruz
   const activeWorkspaceId = useNotesStore((s) => s.activeWorkspaceId);
   const workspaces = useNotesStore((s) => s.workspaces);
   const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
   const currentPrimaryColor = activeWorkspace?.color || Colors.primary;
+
+  const updateNote = useNotesStore((s) => s.updateNote); // 🔥 Notu güncellemek için
 
   const formattedDate = new Date(
     note.updatedAt || Date.now(),
@@ -34,6 +35,25 @@ export function NoteCard({
     day: "numeric",
     month: "short",
   });
+
+  // ✅ Kart üzerindeki bir yapılacak maddesinin tik durumunu değiştirir
+  const handleToggleCardTodo = (todoId: string) => {
+    if (!note.todos) return;
+    const updatedTodos = note.todos.map((t) =>
+      t.id === todoId ? { ...t, done: !t.done } : t,
+    );
+    // Notu mevcut başlık, içerik, etiket, ses ve güncel todos ile güncelliyoruz
+    updateNote(
+      note.id,
+      note.title,
+      note.content,
+      note.tags || [],
+      note.audioUri || null,
+      updatedTodos,
+    );
+  };
+
+  const doneCount = note.todos?.filter((t) => t.done).length || 0;
 
   return (
     <Pressable
@@ -62,7 +82,6 @@ export function NoteCard({
             {note.title || "Başlıksız Not"}
           </Text>
 
-          {/* 🔥 SEÇİM MODUNDAYSA SAĞ ÜSTTE PIN İKONU BELİRİR */}
           {isSelectionMode ? (
             <Pressable
               onPress={(e) => {
@@ -85,7 +104,6 @@ export function NoteCard({
               />
             </Pressable>
           ) : (
-            /* Normal durum: Sadece pinlenmişse minik rozet görünür */
             note.isPinned && (
               <View style={styles.pinnedBadge}>
                 <Ionicons name="pin" size={13} color={currentPrimaryColor} />
@@ -99,7 +117,54 @@ export function NoteCard({
           {note.content || "İçerik bulunmuyor..."}
         </Text>
 
-        {/* 🎙️ SESLİ NOT OYNATICISI (Eğer notta ses varsa kart içinde görünür) */}
+        {/* ✅ Ana Sayfa Kart İçinde Yapılacaklar Listesi */}
+        {note.todos && note.todos.length > 0 && (
+          <View
+            style={[
+              styles.cardTodoContainer,
+              { borderColor: currentPrimaryColor + "25" },
+            ]}
+          >
+            <View style={styles.cardTodoHeader}>
+              <Text
+                style={[styles.cardTodoTitle, { color: currentPrimaryColor }]}
+              >
+                Yapılacaklar
+              </Text>
+              <Text style={styles.cardTodoCounter}>
+                {doneCount}/{note.todos.length}
+              </Text>
+            </View>
+
+            {note.todos.map((todo) => (
+              <Pressable
+                key={todo.id}
+                style={styles.cardTodoRow}
+                onPress={(e) => {
+                  e.stopPropagation(); // Kartın Detay Sayfasına gitmesini engeller, sadece tike basar
+                  handleToggleCardTodo(todo.id);
+                }}
+              >
+                <Ionicons
+                  name={todo.done ? "checkbox" : "square-outline"}
+                  size={18}
+                  color={todo.done ? currentPrimaryColor : Colors.textMuted}
+                />
+                <Text
+                  style={[
+                    styles.cardTodoText,
+                    todo.done && styles.cardTodoTextDone,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {todo.text}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+
+        {/* 🎙️ SESLİ NOT OYNATICISI */}
         {note.audioUri && (
           <View style={styles.audioBubbleWrapper}>
             <NoteAudioPlayerBubble uri={note.audioUri} />
@@ -136,7 +201,6 @@ export function NoteCard({
           <View style={styles.rightFooter}>
             <Text style={styles.dateText}>{formattedDate}</Text>
 
-            {/* Minimalist Yuvarlak Seçim Dairesi */}
             {isSelectionMode && (
               <View
                 style={[
@@ -179,9 +243,7 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
     opacity: 0.9,
   },
-  selectedCard: {
-    // Dinamik renk ile eziliyor
-  },
+  selectedCard: {},
   accentBar: {
     width: 5,
     borderTopLeftRadius: 16,
@@ -219,6 +281,43 @@ const styles = StyleSheet.create({
     color: "#475569",
     lineHeight: 21,
     marginBottom: 8,
+  },
+  // ✅ Kart içi yapılacaklar listesi stilleri
+  cardTodoContainer: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 8,
+    marginBottom: 10,
+  },
+  cardTodoHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  cardTodoTitle: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  cardTodoCounter: {
+    fontSize: 10,
+    color: Colors.textMuted,
+  },
+  cardTodoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 3,
+  },
+  cardTodoText: {
+    flex: 1,
+    fontSize: 13,
+    color: Colors.textMain,
+  },
+  cardTodoTextDone: {
+    textDecorationLine: "line-through",
+    color: Colors.textMuted,
   },
   audioBubbleWrapper: {
     marginBottom: 10,
@@ -293,9 +392,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#FFFFFF",
   },
-  modernCheckedBox: {
-    // Dinamik renk ile eziliyor
-  },
+  modernCheckedBox: {},
   innerDot: {
     width: 8,
     height: 8,

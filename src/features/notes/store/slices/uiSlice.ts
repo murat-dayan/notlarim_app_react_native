@@ -1,4 +1,5 @@
 import { StateCreator } from "zustand";
+import { TodoItem } from "../../types";
 
 export type SortType = "en yeniler" | "en eskiler" | "alfabetik";
 
@@ -12,6 +13,7 @@ export type UiSlice = {
   selectedTagFilter: string | null;
   zenDraftContent: string | null;
   zenDraftAudioUri: string | null; // 🔥 Yeni eklendi
+  zenDraftTodos: TodoItem[] | null; // 🔥 Yeni
 
   setSearchQuery: (query: string) => void;
   toggleSelectNote: (id: string) => void;
@@ -25,6 +27,7 @@ export type UiSlice = {
   setZenDraftContent: (
     content: string | null,
     audioUri?: string | null,
+    todos?: TodoItem[] | null,
   ) => void; // 🔥 Güncellendi
 };
 
@@ -41,6 +44,7 @@ export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (
   selectedTagFilter: null,
   zenDraftContent: null, // Başlangıçta boş
   zenDraftAudioUri: null, // Başlangıçta boş
+  zenDraftTodos: null, // Başlangıçta boş
 
   setSearchQuery: (query) => set({ searchQuery: query }),
 
@@ -92,6 +96,10 @@ export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (
 
   setSelectedTagFilter: (tag) => set({ selectedTagFilter: tag }),
 
-  setZenDraftContent: (content, audioUri = null) =>
-    set({ zenDraftContent: content, zenDraftAudioUri: audioUri }),
+  setZenDraftContent: (content, audioUri = null, todos = null) =>
+    set({
+      zenDraftContent: content,
+      zenDraftAudioUri: audioUri,
+      zenDraftTodos: todos,
+    }),
 });

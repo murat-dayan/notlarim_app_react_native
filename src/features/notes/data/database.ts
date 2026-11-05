@@ -7,6 +7,8 @@ export function getDb() {
     dbPromise = (async () => {
       const db = await SQLite.openDatabaseAsync("notlarim.db");
 
+      await db.execAsync("PRAGMA foreign_keys = ON;");
+
       // 1. Temel Tabloyu Oluştur (Eğer hiç yoksa)
       await db.execAsync(`
         CREATE TABLE IF NOT EXISTS notes (
@@ -134,8 +136,34 @@ export function getDb() {
         console.error("Migration hatası (audio_uri):", error);
       }
 
+      // ✅ Yapılacaklar tablosu (foreign key + cascade)
+      // Eski FK'siz tablo varsa bir kereliğine silip yeniden oluşturuyoruz.
+      // (Tablo henüz boş olduğu için veri kaybı yok.)
+      try {
+        const fkList = await db.getAllAsync("PRAGMA foreign_key_list(todos)");
+        if (fkList.length === 0) {
+          await db.execAsync("DROP TABLE IF EXISTS todos;");
+        }
+      } catch (error) {
+        console.error("Migration hatası (todos FK):", error);
+      }
+
+      await db.execAsync(`
+  CREATE TABLE IF NOT EXISTS todos (
+    id TEXT PRIMARY KEY NOT NULL,
+    note_id TEXT NOT NULL,
+    text TEXT NOT NULL,
+    done INTEGER NOT NULL DEFAULT 0,
+    position INTEGER NOT NULL,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_todos_note_id ON todos(note_id);
+`);
+
       return db;
     })();
   }
+
   return dbPromise;
 }

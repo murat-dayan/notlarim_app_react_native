@@ -19,6 +19,7 @@ import { NoteAudioPlayerBubble } from "../components/NoteAudioPlayerBubble";
 import { NoteCustomHeader } from "../components/NoteCustomHeader";
 import { NoteTextInput } from "../components/NoteTextInput";
 import { useNotesStore } from "../store/useNotesStore";
+import { TodoItem } from "../types"; // 🔥 TodoItem tipini içeri aktarıyoruz
 
 // Hazır popüler etiket seçenekleri
 const PREDEFINED_TAGS = [
@@ -60,13 +61,18 @@ export function NoteEditorScreen() {
   const [customTagInput, setCustomTagInput] = useState("");
   const [isAddingCustom, setIsAddingCustom] = useState(false);
 
+  // 🔥 Zen Draft Store Değerleri
   const zenDraftContent = useNotesStore((s) => s.zenDraftContent);
   const zenDraftAudioUri = useNotesStore((s) => s.zenDraftAudioUri);
+  const zenDraftTodos = useNotesStore((s) => s.zenDraftTodos);
   const clearZenDraft = useNotesStore((s) => s.setZenDraftContent);
 
   const [audioUri, setAudioUri] = useState<string | null>(
     existing?.audioUri ?? null,
   );
+
+  // ✅ Not ekranındaki Yapılacaklar State'i (Başlangıçta mevcut nottan veya boş dizi)
+  const [todos, setTodos] = useState<TodoItem[]>(existing?.todos ?? []);
 
   // Etiket seçme / kaldırma mantığı
   const toggleTag = (tag: string) => {
@@ -88,15 +94,15 @@ export function NoteEditorScreen() {
   };
 
   const handleSave = async () => {
-    if (!title.trim() && !content.trim() && !audioUri) {
+    if (!title.trim() && !content.trim() && !audioUri && todos.length === 0) {
       router.back();
       return;
     }
 
     if (id) {
-      await updateNote(id, title, content, selectedTags, audioUri);
+      await updateNote(id, title, content, selectedTags, audioUri, todos);
     } else {
-      await addNote(title, content, selectedTags, audioUri);
+      await addNote(title, content, selectedTags, audioUri, todos);
     }
     router.back();
   };
@@ -122,19 +128,33 @@ export function NoteEditorScreen() {
     setContent(content + bulletPrefix);
   };
 
+  // ✅ Sadece checkbox durumunu değiştiren fonksiyon (Not ekranında yeni madde eklenmez/silinmez)
+  const handleToggleTodo = (todoId: string) => {
+    setTodos((prev) =>
+      prev.map((t) => (t.id === todoId ? { ...t, done: !t.done } : t)),
+    );
+  };
+
   const characterCount = content.length;
 
+  // 🔥 Zen modundan dönünce içerik, ses ve yapılacakları güncelleme
+  // 🔥 Zen modundan dönünce içerik, ses ve yapılacakları güncelleme
   useFocusEffect(
     useCallback(() => {
       if (zenDraftContent !== null && zenDraftContent !== undefined) {
         setContent(zenDraftContent);
-        if (zenDraftAudioUri) {
+        if (zenDraftAudioUri !== undefined) {
           setAudioUri(zenDraftAudioUri);
         }
-        clearZenDraft(null, null); // Temizle
+        if (zenDraftTodos !== undefined && zenDraftTodos !== null) {
+          setTodos(zenDraftTodos); // 👈 null kontrolü eklendi
+        }
+        clearZenDraft(null, null, null); // Zen draft'ı temizle
       }
-    }, [zenDraftContent, zenDraftAudioUri]),
+    }, [zenDraftContent, zenDraftAudioUri, zenDraftTodos]),
   );
+
+  const doneCount = todos.filter((t) => t.done).length;
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior="padding">
@@ -150,202 +170,267 @@ export function NoteEditorScreen() {
         onRightPress={handleSave}
       />
 
-      <NoteTextInput
-        placeholder="Başlık"
-        placeholderTextColor={currentPrimaryColor}
-        label="Başlık Ekleyin"
-        value={title}
-        onChangeText={setTitle}
-        activeColor={currentPrimaryColor}
-      />
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <NoteTextInput
+          placeholder="Başlık"
+          placeholderTextColor={currentPrimaryColor}
+          label="Başlık Ekleyin"
+          value={title}
+          onChangeText={setTitle}
+          activeColor={currentPrimaryColor}
+        />
 
-      {/* İnteraktif Etiket Seçim Alanı */}
-      <View style={styles.tagsSection}>
-        <Text style={styles.sectionLabel}>Etiketler</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tagsContainer}
-        >
-          {PREDEFINED_TAGS.map((tag) => {
-            const isSelected = selectedTags.includes(tag);
-            return (
-              <TouchableOpacity
-                key={tag}
-                style={[
-                  styles.tagChip,
-                  isSelected && [
+        {/* İnteraktif Etiket Seçim Alanı */}
+        <View style={styles.tagsSection}>
+          <Text style={styles.sectionLabel}>Etiketler</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tagsContainer}
+          >
+            {PREDEFINED_TAGS.map((tag) => {
+              const isSelected = selectedTags.includes(tag);
+              return (
+                <TouchableOpacity
+                  key={tag}
+                  style={[
+                    styles.tagChip,
+                    isSelected && [
+                      styles.selectedTagChip,
+                      {
+                        backgroundColor: currentPrimaryColor,
+                        borderColor: currentPrimaryColor,
+                      },
+                    ],
+                  ]}
+                  onPress={() => toggleTag(tag)}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.tagText,
+                      isSelected && styles.selectedTagText,
+                    ]}
+                  >
+                    {tag} {isSelected ? "✓" : "+"}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+
+            {/* Kullanıcının kendi özel etiketleri */}
+            {selectedTags
+              .filter((t) => !PREDEFINED_TAGS.includes(t))
+              .map((tag) => (
+                <TouchableOpacity
+                  key={tag}
+                  style={[
+                    styles.tagChip,
                     styles.selectedTagChip,
                     {
                       backgroundColor: currentPrimaryColor,
                       borderColor: currentPrimaryColor,
                     },
-                  ],
-                ]}
-                onPress={() => toggleTag(tag)}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[styles.tagText, isSelected && styles.selectedTagText]}
+                  ]}
+                  onPress={() => toggleTag(tag)}
+                  activeOpacity={0.7}
                 >
-                  {tag} {isSelected ? "✓" : "+"}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+                  <Text style={[styles.tagText, styles.selectedTagText]}>
+                    {tag} ✓
+                  </Text>
+                </TouchableOpacity>
+              ))}
 
-          {/* Kullanıcının kendi özel etiketleri */}
-          {selectedTags
-            .filter((t) => !PREDEFINED_TAGS.includes(t))
-            .map((tag) => (
-              <TouchableOpacity
-                key={tag}
+            {/* Yeni Özel Etiket Ekleme Butonu / Inputu */}
+            {isAddingCustom ? (
+              <View
                 style={[
-                  styles.tagChip,
-                  styles.selectedTagChip,
-                  {
-                    backgroundColor: currentPrimaryColor,
-                    borderColor: currentPrimaryColor,
-                  },
+                  styles.customTagInputContainer,
+                  { borderColor: currentPrimaryColor },
                 ]}
-                onPress={() => toggleTag(tag)}
-                activeOpacity={0.7}
               >
-                <Text style={[styles.tagText, styles.selectedTagText]}>
-                  {tag} ✓
-                </Text>
+                <TextInput
+                  style={styles.customTagInput}
+                  placeholder="Etiket adı..."
+                  placeholderTextColor={Colors.textMuted}
+                  value={customTagInput}
+                  onChangeText={setCustomTagInput}
+                  onSubmitEditing={handleAddCustomTag}
+                  autoFocus
+                />
+                <TouchableOpacity
+                  onPress={handleAddCustomTag}
+                  style={[
+                    styles.addTagConfirmBtn,
+                    { backgroundColor: currentPrimaryColor },
+                  ]}
+                >
+                  <Text style={styles.addTagConfirmText}>Ekle</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.addTagChip}
+                onPress={() => setIsAddingCustom(true)}
+              >
+                <Text style={styles.addTagText}>+ Yeni Etiket</Text>
               </TouchableOpacity>
-            ))}
+            )}
+          </ScrollView>
+        </View>
 
-          {/* Yeni Özel Etiket Ekleme Butonu / Inputu */}
-          {isAddingCustom ? (
+        <View style={styles.editorContainer}>
+          {/* Üst Kısım: Tarih ve Canlı Karakter Sayacı Rozeti */}
+          <View style={styles.editorHeaderMeta}>
             <View
               style={[
-                styles.customTagInputContainer,
-                { borderColor: currentPrimaryColor },
+                styles.metaBadge,
+                { borderColor: currentPrimaryColor + "40" },
               ]}
             >
-              <TextInput
-                style={styles.customTagInput}
-                placeholder="Etiket adı..."
-                placeholderTextColor={Colors.textMuted}
-                value={customTagInput}
-                onChangeText={setCustomTagInput}
-                onSubmitEditing={handleAddCustomTag}
-                autoFocus
+              <Ionicons
+                name="time-outline"
+                size={13}
+                color={currentPrimaryColor}
               />
-              <TouchableOpacity
-                onPress={handleAddCustomTag}
-                style={[
-                  styles.addTagConfirmBtn,
-                  { backgroundColor: currentPrimaryColor },
-                ]}
-              >
-                <Text style={styles.addTagConfirmText}>Ekle</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={styles.addTagChip}
-              onPress={() => setIsAddingCustom(true)}
-            >
-              <Text style={styles.addTagText}>+ Yeni Etiket</Text>
-            </TouchableOpacity>
-          )}
-        </ScrollView>
-      </View>
-
-      <View style={styles.editorContainer}>
-        {/* Üst Kısım: Tarih ve Canlı Karakter Sayacı Rozeti */}
-        <View style={styles.editorHeaderMeta}>
-          <View
-            style={[
-              styles.metaBadge,
-              { borderColor: currentPrimaryColor + "40" },
-            ]}
-          >
-            <Ionicons
-              name="time-outline"
-              size={13}
-              color={currentPrimaryColor}
-            />
-            <Text style={[styles.metaText, { color: currentPrimaryColor }]}>
-              {getCurrentFormattedTime()}
-            </Text>
-          </View>
-          <View
-            style={[
-              styles.metaBadge,
-              { borderColor: currentPrimaryColor + "40" },
-            ]}
-          >
-            <Ionicons
-              name="text-outline"
-              size={13}
-              color={currentPrimaryColor}
-            />
-            <Text style={[styles.metaText, { color: currentPrimaryColor }]}>
-              {characterCount} karakter
-            </Text>
-          </View>
-        </View>
-
-        {/* 🎙️ SESLİ NOT BLOKU (İçerik Akışının İçinde, Inputun Hemen Üstünde) */}
-        {audioUri && (
-          <View style={styles.inlineAudioContainer}>
-            <View style={styles.audioHeaderRow}>
-              <Ionicons name="mic" size={14} color={currentPrimaryColor} />
-              <Text
-                style={[styles.audioLabelText, { color: currentPrimaryColor }]}
-              >
-                Sesli Not
+              <Text style={[styles.metaText, { color: currentPrimaryColor }]}>
+                {getCurrentFormattedTime()}
               </Text>
             </View>
-            <NoteAudioPlayerBubble uri={audioUri} />
+            <View
+              style={[
+                styles.metaBadge,
+                { borderColor: currentPrimaryColor + "40" },
+              ]}
+            >
+              <Ionicons
+                name="text-outline"
+                size={13}
+                color={currentPrimaryColor}
+              />
+              <Text style={[styles.metaText, { color: currentPrimaryColor }]}>
+                {characterCount} karakter
+              </Text>
+            </View>
           </View>
-        )}
 
-        {/* İçerik Inputu (Orijinal yapısı bozulmadan) */}
-        <NoteTextInput
-          placeholder="Notunu yazmaya başla..."
-          placeholderTextColor={currentPrimaryColor}
-          value={content}
-          onChangeText={setContent}
-          multiline
-          style={{ minHeight: 250, lineHeight: 24 }}
-          activeColor={currentPrimaryColor}
-        />
+          {/* ✅ Sadece Görüntülenebilir & Checkbox İşlevli Yapılacaklar Listesi */}
+          {todos.length > 0 && (
+            <View
+              style={[
+                styles.readOnlyTodoCard,
+                { borderColor: currentPrimaryColor + "30" },
+              ]}
+            >
+              <View style={styles.readOnlyTodoHeader}>
+                <Text
+                  style={[
+                    styles.readOnlyTodoTitle,
+                    { color: currentPrimaryColor },
+                  ]}
+                >
+                  Yapılacaklar
+                </Text>
+                <Text style={styles.readOnlyTodoCounter}>
+                  {doneCount}/{todos.length} tamamlandı
+                </Text>
+              </View>
 
-        {/* Alt Kısım: İşlevsel Araç Çubuğu */}
-        <View style={styles.editorToolbar}>
-          <Pressable style={styles.toolbarButton} onPress={handleAddBullet}>
-            <Ionicons name="list" size={18} color={currentPrimaryColor} />
-            <Text style={styles.toolbarButtonText}>Madde Ekle</Text>
-          </Pressable>
-          <Pressable
-            style={styles.toolbarButton}
-            onPress={() =>
-              router.push({
-                pathname: "/zen-editor",
-                params: { currentContent: content },
-              })
-            }
-          >
-            <Ionicons
-              name="expand-outline"
-              size={18}
-              color={currentPrimaryColor}
-            />
-            <Text style={styles.toolbarButtonText}>Zen Modu</Text>
-          </Pressable>
+              {todos.map((todo) => (
+                <View key={todo.id} style={styles.readOnlyTodoRow}>
+                  <TouchableOpacity
+                    onPress={() => handleToggleTodo(todo.id)}
+                    hitSlop={8}
+                    style={styles.todoCheck}
+                  >
+                    <Ionicons
+                      name={todo.done ? "checkbox" : "square-outline"}
+                      size={20}
+                      color={todo.done ? currentPrimaryColor : Colors.textMuted}
+                    />
+                  </TouchableOpacity>
+
+                  <Text
+                    style={[
+                      styles.readOnlyTodoText,
+                      todo.done && styles.readOnlyTodoTextDone,
+                    ]}
+                  >
+                    {todo.text}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* 🎙️ SESLİ NOT BLOKU */}
+          {audioUri && (
+            <View style={styles.inlineAudioContainer}>
+              <View style={styles.audioHeaderRow}>
+                <Ionicons name="mic" size={14} color={currentPrimaryColor} />
+                <Text
+                  style={[
+                    styles.audioLabelText,
+                    { color: currentPrimaryColor },
+                  ]}
+                >
+                  Sesli Not
+                </Text>
+              </View>
+              <NoteAudioPlayerBubble uri={audioUri} />
+            </View>
+          )}
+
+          {/* İçerik Inputu */}
+          <NoteTextInput
+            placeholder="Notunu yazmaya başla..."
+            placeholderTextColor={currentPrimaryColor}
+            value={content}
+            onChangeText={setContent}
+            multiline
+            style={{ minHeight: 250, lineHeight: 24 }}
+            activeColor={currentPrimaryColor}
+          />
+
+          {/* Alt Kısım: İşlevsel Araç Çubuğu (Zen moda currentTodos gönderiliyor) */}
+          <View style={styles.editorToolbar}>
+            <Pressable style={styles.toolbarButton} onPress={handleAddBullet}>
+              <Ionicons name="list" size={18} color={currentPrimaryColor} />
+              <Text style={styles.toolbarButtonText}>Madde Ekle</Text>
+            </Pressable>
+            <Pressable
+              style={styles.toolbarButton}
+              onPress={() =>
+                router.push({
+                  pathname: "/zen-editor",
+                  params: {
+                    currentContent: content,
+                    currentTodos: JSON.stringify(todos), // 🔥 Zen moda mevcut yapılacakları aktarıyoruz
+                    currentAudioUri: audioUri ?? "",
+                  },
+                })
+              }
+            >
+              <Ionicons
+                name="expand-outline"
+                size={18}
+                color={currentPrimaryColor}
+              />
+              <Text style={styles.toolbarButtonText}>Zen Modu</Text>
+            </Pressable>
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: Colors.background },
+  scrollContent: { padding: 16, paddingBottom: 40 },
   tagsSection: {
     marginBottom: 12,
     paddingHorizontal: 16,
@@ -442,7 +527,7 @@ const styles = StyleSheet.create({
   editorHeaderMeta: {
     flexDirection: "row",
     gap: 8,
-    marginBottom: 6,
+    marginBottom: 12,
   },
   metaBadge: {
     flexDirection: "row",
@@ -457,6 +542,46 @@ const styles = StyleSheet.create({
   metaText: {
     fontSize: 12,
     fontWeight: "500",
+  },
+  // ✅ Salt okunur & Checkbox yapılabilir todo kartı stilleri
+  readOnlyTodoCard: {
+    backgroundColor: Colors.card,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+    marginBottom: 12,
+  },
+  readOnlyTodoHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  readOnlyTodoTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  readOnlyTodoCounter: {
+    fontSize: 11,
+    color: Colors.textMuted,
+  },
+  readOnlyTodoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 4,
+  },
+  todoCheck: {
+    padding: 2,
+  },
+  readOnlyTodoText: {
+    flex: 1,
+    fontSize: 14,
+    color: Colors.textMain,
+  },
+  readOnlyTodoTextDone: {
+    textDecorationLine: "line-through",
+    color: Colors.textMuted,
   },
   editorToolbar: {
     flexDirection: "row",
