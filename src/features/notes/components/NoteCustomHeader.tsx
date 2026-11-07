@@ -1,7 +1,7 @@
 import { Colors } from "@/constants/colors";
 import React, { useEffect, useRef, useState } from "react";
 import { Animated, LayoutChangeEvent, StyleSheet, View } from "react-native";
-import { useNotesStore } from "../store/useNotesStore";
+import { useNotesStore } from "../store/notesStore";
 import { NoteRoundIconButton } from "./NoteRoundIconButton";
 import { NoteText } from "./NoteText";
 

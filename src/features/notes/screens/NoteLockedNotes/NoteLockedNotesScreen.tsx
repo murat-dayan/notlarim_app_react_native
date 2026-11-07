@@ -1,11 +1,12 @@
 import { Colors } from "@/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { FlatList, StyleSheet, Text, View } from "react-native";
-import { NoteCard } from "../components/NoteCard";
-import { NoteCustomHeader } from "../components/NoteCustomHeader";
-import { NoteSwipeableItem } from "../components/NoteSwıpeableItem";
-import { useNotesStore } from "../store/useNotesStore";
+import { FlatList, Text, View } from "react-native";
+import { NoteCard } from "../../components/NoteCard";
+import { NoteCustomHeader } from "../../components/NoteCustomHeader";
+import { NoteSwipeableItem } from "../../components/NoteSwıpeableItem";
+import { useNotesStore } from "../../store/notesStore";
+import { styles } from "./NoteLockedNotes.styles";
 
 export function NoteLockedNotesScreen() {
   const router = useRouter();
@@ -64,20 +65,3 @@ export function NoteLockedNotesScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8fafc",
-    paddingHorizontal: 16,
-    paddingTop: 20,
-  },
-  listContainer: { paddingBottom: 20 },
-  emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  emptyText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#64748b",
-    fontWeight: "500",
-  },
-});

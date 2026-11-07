@@ -1,7 +1,7 @@
 import { Colors } from "@/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { useNotesStore } from "../store/useNotesStore";
+import { useNotesStore } from "../store/notesStore";
 import { Note } from "../types";
 import { NoteAudioPlayerBubble } from "./NoteAudioPlayerBubble";
 

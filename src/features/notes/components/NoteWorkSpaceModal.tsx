@@ -1,5 +1,5 @@
 import { Colors } from "@/constants/colors";
-import { useNotesStore } from "@/features/notes/store/useNotesStore";
+import { useNotesStore } from "@/features/notes/store/notesStore";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {

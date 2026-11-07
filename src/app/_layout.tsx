@@ -1,4 +1,4 @@
-import { useNotesStore } from "@/features/notes/store/useNotesStore";
+import { useNotesStore } from "@/features/notes/store/notesStore";
 import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
 import { useEffect } from "react";

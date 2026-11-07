@@ -3,61 +3,56 @@ import { authenticateBiometric } from "@/utils/biometric";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import {
-  FlatList,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { FlatList, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { NoteCard } from "../components/NoteCard";
-import { NoteCustomHeader } from "../components/NoteCustomHeader";
-import NoteLoadingView from "../components/NoteLoadingView";
-import { NoteRoundIconButton } from "../components/NoteRoundIconButton";
-import { NoteSearchBar } from "../components/NoteSearchBar";
-import { NoteWorkspaceModal } from "../components/NoteWorkSpaceModal";
-import { useNotesStore } from "../store/useNotesStore";
+import { NoteCard } from "../../components/NoteCard";
+import { NoteCustomHeader } from "../../components/NoteCustomHeader";
+import NoteLoadingView from "../../components/NoteLoadingView";
+import { NoteRoundIconButton } from "../../components/NoteRoundIconButton";
+import { NoteSearchBar } from "../../components/NoteSearchBar";
+import { NoteWorkspaceModal } from "../../components/NoteWorkSpaceModal";
+import { useNotes } from "../../store/hooks/useNotes";
+import { styles } from "./NotesList.styles";
 
 export function NotesListScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const notes = useNotesStore((s) => s.notes);
-  const isLoading = useNotesStore((s) => s.isLoading);
+  const {
+    notes,
+    isLoading,
 
-  const searchQuery = useNotesStore((s) => s.searchQuery);
-  const setSearchQuery = useNotesStore((s) => s.setSearchQuery);
+    searchQuery,
+    setSearchQuery,
 
-  const sortBy = useNotesStore((s) => s.sortBy);
-  const setSortBy = useNotesStore((s) => s.setSortBy);
+    sortBy,
+    setSortBy,
 
-  const isSortMenuOpen = useNotesStore((s) => s.isSortMenuOpen);
-  const toggleSortMenu = useNotesStore((s) => s.toggleSortMenu);
-  const closeSortMenu = useNotesStore((s) => s.closeSortMenu);
+    isSortMenuOpen,
+    toggleSortMenu,
+    closeSortMenu,
 
-  const isSearchOpen = useNotesStore((s) => s.isSearchOpen);
-  const toggleSearch = useNotesStore((s) => s.toggleSearch);
+    isSearchOpen,
+    toggleSearch,
 
-  const isSelectionMode = useNotesStore((s) => s.isSelectionMode);
-  const selectedNoteIds = useNotesStore((s) => s.selectedNoteIds);
+    isSelectionMode,
+    selectedNoteIds,
 
-  const selectedTagFilter = useNotesStore((s) => s.selectedTagFilter);
-  const setSelectedTagFilter = useNotesStore((s) => s.setSelectedTagFilter);
+    selectedTagFilter,
+    setSelectedTagFilter,
 
-  const toggleSelectNote = useNotesStore((s) => s.toggleSelectNote);
-  const selectAllNotes = useNotesStore((s) => s.selectAllNotes);
-  const clearSelection = useNotesStore((s) => s.clearSelection);
-  const deleteSelectedNotes = useNotesStore((s) => s.deleteSelectedNotes);
+    toggleSelectNote,
+    selectAllNotes,
+    clearSelection,
+    deleteSelectedNotes,
 
-  const togglePinNote = useNotesStore((s) => s.togglePinNote);
+    togglePinNote,
+    toggleLockNote,
 
-  const toggleLockNote = useNotesStore((s) => s.toggleLockNote);
-
-  const activeWorkspaceId = useNotesStore((s) => s.activeWorkspaceId);
-  const workspaces = useNotesStore((s) => s.workspaces);
-  const setActiveWorkspaceId = useNotesStore((s) => s.setActiveWorkspaceId);
+    activeWorkspaceId,
+    workspaces,
+    setActiveWorkspaceId,
+  } = useNotes();
 
   // State eklemesi:
   const [isWorkspaceModalVisible, setIsWorkspaceModalVisible] = useState(false);
@@ -417,168 +412,3 @@ export function NotesListScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  list: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-  },
-  emptyContainer: {
-    paddingVertical: 40,
-    alignItems: "center",
-  },
-  empty: {
-    textAlign: "center",
-    color: Colors.textMuted,
-    fontSize: 14,
-  },
-  normalHeader: {
-    paddingHorizontal: 16,
-    paddingTop: 0,
-    paddingBottom: 8,
-    backgroundColor: Colors.card,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  headerContent: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    height: 44,
-  },
-  headerIcons: {
-    flexDirection: "row",
-    marginHorizontal: 1,
-    width: "100%",
-    gap: 8,
-  },
-  searchBarContainer: {
-    flexDirection: "row",
-    width: "100%",
-    alignItems: "center",
-    gap: 8,
-  },
-  filterBarContainer: {
-    backgroundColor: Colors.card,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    paddingVertical: 4,
-  },
-  filterScrollContent: {
-    paddingHorizontal: 16,
-    gap: 8,
-    alignItems: "center",
-  },
-  filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 14,
-    backgroundColor: "#F1F5F9",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  activeFilterChip: {},
-  filterChipText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: Colors.textMain,
-  },
-  activeFilterChipText: {
-    color: "#FFFFFF",
-  },
-  selectionHeader: {
-    backgroundColor: Colors.card,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  selectionInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-  },
-  cancelText: {
-    fontSize: 15,
-    color: Colors.textMuted,
-    fontWeight: "500",
-  },
-  selectedCountText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: Colors.textMain,
-  },
-  selectionActions: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  actionBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: "#F1F5F9",
-  },
-  actionBtnText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: Colors.textMain,
-  },
-  deleteBtn: {
-    backgroundColor: "#FEE2E2",
-  },
-  deleteBtnText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#EF4444",
-  },
-  dropdownMenu: {
-    position: "absolute",
-    right: -170,
-    top: 30,
-    width: 180,
-    backgroundColor: Colors.card,
-    borderRadius: 12,
-    padding: 6,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    zIndex: 999,
-  },
-  menuTitle: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: Colors.textMuted,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    marginBottom: 4,
-  },
-  menuItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  activeMenuItem: {
-    backgroundColor: "#F1F5F9",
-  },
-  menuText: {
-    fontSize: 14,
-    color: Colors.textMain,
-  },
-  activeMenuText: {
-    fontWeight: "600",
-    color: Colors.primary,
-  },
-});
