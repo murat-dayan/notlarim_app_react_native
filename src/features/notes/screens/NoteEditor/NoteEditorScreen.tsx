@@ -8,7 +8,6 @@ import {
   Pressable,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -16,18 +15,10 @@ import {
 import { NoteAudioPlayerBubble } from "../../components/NoteAudioPlayerBubble";
 import { NoteCustomHeader } from "../../components/NoteCustomHeader";
 import { NoteTextInput } from "../../components/NoteTextInput";
+import { NoteTodoList } from "../../components/NoteToDoList";
 import { styles } from "./NoteEditor.styles";
+import { NoteEditorTags } from "./components/NoteEditorTags";
 import { useNoteEditor } from "./hooks/useNoteEditor";
-
-// Hazır popüler etiket seçenekleri
-const PREDEFINED_TAGS = [
-  "İş",
-  "Kişisel",
-  "Fikir",
-  "Önemli",
-  "Alışveriş",
-  "Eğitim",
-];
 
 export function NoteEditorScreen() {
   const router = useRouter();
@@ -139,103 +130,16 @@ export function NoteEditorScreen() {
         />
 
         {/* İnteraktif Etiket Seçim Alanı */}
-        <View style={styles.tagsSection}>
-          <Text style={styles.sectionLabel}>Etiketler</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.tagsContainer}
-          >
-            {PREDEFINED_TAGS.map((tag) => {
-              const isSelected = selectedTags.includes(tag);
-              return (
-                <TouchableOpacity
-                  key={tag}
-                  style={[
-                    styles.tagChip,
-                    isSelected && [
-                      styles.selectedTagChip,
-                      {
-                        backgroundColor: currentPrimaryColor,
-                        borderColor: currentPrimaryColor,
-                      },
-                    ],
-                  ]}
-                  onPress={() => toggleTag(tag)}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      styles.tagText,
-                      isSelected && styles.selectedTagText,
-                    ]}
-                  >
-                    {tag} {isSelected ? "✓" : "+"}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-
-            {/* Kullanıcının kendi özel etiketleri */}
-            {selectedTags
-              .filter((t) => !PREDEFINED_TAGS.includes(t))
-              .map((tag) => (
-                <TouchableOpacity
-                  key={tag}
-                  style={[
-                    styles.tagChip,
-                    styles.selectedTagChip,
-                    {
-                      backgroundColor: currentPrimaryColor,
-                      borderColor: currentPrimaryColor,
-                    },
-                  ]}
-                  onPress={() => toggleTag(tag)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.tagText, styles.selectedTagText]}>
-                    {tag} ✓
-                  </Text>
-                </TouchableOpacity>
-              ))}
-
-            {/* Yeni Özel Etiket Ekleme Butonu / Inputu */}
-            {isAddingCustom ? (
-              <View
-                style={[
-                  styles.customTagInputContainer,
-                  { borderColor: currentPrimaryColor },
-                ]}
-              >
-                <TextInput
-                  style={styles.customTagInput}
-                  placeholder="Etiket adı..."
-                  placeholderTextColor={Colors.textMuted}
-                  value={customTagInput}
-                  onChangeText={setCustomTagInput}
-                  onSubmitEditing={handleAddCustomTag}
-                  autoFocus
-                />
-                <TouchableOpacity
-                  onPress={handleAddCustomTag}
-                  style={[
-                    styles.addTagConfirmBtn,
-                    { backgroundColor: currentPrimaryColor },
-                  ]}
-                >
-                  <Text style={styles.addTagConfirmText}>Ekle</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={styles.addTagChip}
-                onPress={() => setIsAddingCustom(true)}
-              >
-                <Text style={styles.addTagText}>+ Yeni Etiket</Text>
-              </TouchableOpacity>
-            )}
-          </ScrollView>
-        </View>
+        <NoteEditorTags
+          selectedTags={selectedTags}
+          currentPrimaryColor={currentPrimaryColor}
+          customTagInput={customTagInput}
+          isAddingCustom={isAddingCustom}
+          onToggleTag={toggleTag}
+          onCustomTagInputChange={setCustomTagInput}
+          onAddingCustomChange={setIsAddingCustom}
+          onAddCustomTag={handleAddCustomTag}
+        />
 
         <View style={styles.editorContainer}>
           {/* Üst Kısım: Tarih ve Canlı Karakter Sayacı Rozeti */}
@@ -274,51 +178,11 @@ export function NoteEditorScreen() {
 
           {/* ✅ Sadece Görüntülenebilir & Checkbox İşlevli Yapılacaklar Listesi */}
           {todos.length > 0 && (
-            <View
-              style={[
-                styles.readOnlyTodoCard,
-                { borderColor: currentPrimaryColor + "30" },
-              ]}
-            >
-              <View style={styles.readOnlyTodoHeader}>
-                <Text
-                  style={[
-                    styles.readOnlyTodoTitle,
-                    { color: currentPrimaryColor },
-                  ]}
-                >
-                  Yapılacaklar
-                </Text>
-                <Text style={styles.readOnlyTodoCounter}>
-                  {doneCount}/{todos.length} tamamlandı
-                </Text>
-              </View>
-
-              {todos.map((todo) => (
-                <View key={todo.id} style={styles.readOnlyTodoRow}>
-                  <TouchableOpacity
-                    onPress={() => handleToggleTodo(todo.id)}
-                    hitSlop={8}
-                    style={styles.todoCheck}
-                  >
-                    <Ionicons
-                      name={todo.done ? "checkbox" : "square-outline"}
-                      size={20}
-                      color={todo.done ? currentPrimaryColor : Colors.textMuted}
-                    />
-                  </TouchableOpacity>
-
-                  <Text
-                    style={[
-                      styles.readOnlyTodoText,
-                      todo.done && styles.readOnlyTodoTextDone,
-                    ]}
-                  >
-                    {todo.text}
-                  </Text>
-                </View>
-              ))}
-            </View>
+            <NoteTodoList
+              todos={todos}
+              primaryColor={currentPrimaryColor}
+              onToggleTodo={handleToggleTodo}
+            />
           )}
 
           {/* 🎙️ SESLİ NOT BLOKU */}

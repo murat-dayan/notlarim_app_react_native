@@ -22,6 +22,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NoteAudioPlayerBubble } from "../../components/NoteAudioPlayerBubble"; // 🔥 Zen modda dinlemek için
+import { NoteTodoList } from "../../components/NoteToDoList";
 import { useNotes } from "../../store/hooks/useNotes";
 import { TodoItem } from "../../types";
 import { styles } from "./NoteZenEditor.styles";
@@ -142,7 +143,11 @@ export function NoteZenEditorScreen() {
       return [];
     }
   });
-  const [isTodoPanelOpen, setIsTodoPanelOpen] = useState(false);
+
+  const [isTodoPanelOpen, setIsTodoPanelOpen] = useState(
+    () => todos.length > 0,
+  );
+
   const [isTodoPanelMinimized, setIsTodoPanelMinimized] = useState(false); // 🆕 Yeni state
   const [newTodoText, setNewTodoText] = useState("");
 
@@ -440,38 +445,13 @@ export function NoteZenEditorScreen() {
               nestedScrollEnabled
               keyboardShouldPersistTaps="handled"
             >
-              {todos.map((todo) => (
-                <View key={todo.id} style={styles.todoRow}>
-                  <TouchableOpacity
-                    onPress={() => handleToggleTodo(todo.id)}
-                    hitSlop={8}
-                    style={styles.todoCheck}
-                  >
-                    <Ionicons
-                      name={todo.done ? "checkbox" : "square-outline"}
-                      size={22}
-                      color={todo.done ? currentPrimaryColor : Colors.textMuted}
-                    />
-                  </TouchableOpacity>
-
-                  <Text
-                    style={[styles.todoText, todo.done && styles.todoTextDone]}
-                  >
-                    {todo.text}
-                  </Text>
-
-                  <TouchableOpacity
-                    onPress={() => handleDeleteTodo(todo.id)}
-                    hitSlop={~8}
-                  >
-                    <Ionicons
-                      name="close-circle-outline"
-                      size={18}
-                      color="#EF4444"
-                    />
-                  </TouchableOpacity>
-                </View>
-              ))}
+              <NoteTodoList
+                todos={todos}
+                primaryColor={currentPrimaryColor}
+                onToggleTodo={handleToggleTodo}
+                onDeleteTodo={handleDeleteTodo}
+                variant="plain"
+              />
             </ScrollView>
           )}
 
