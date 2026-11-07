@@ -22,7 +22,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NoteAudioPlayerBubble } from "../../components/NoteAudioPlayerBubble"; // 🔥 Zen modda dinlemek için
-import { NoteTodoList } from "../../components/NoteToDoList";
+import { NoteTodoList } from "../../components/NoteTodoList";
 import { useNotes } from "../../store/hooks/useNotes";
 import { TodoItem } from "../../types";
 import { styles } from "./NoteZenEditor.styles";
