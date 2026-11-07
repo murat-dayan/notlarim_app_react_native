@@ -1,10 +1,9 @@
 import { Colors } from "@/constants/colors";
 import { getCurrentFormattedTime } from "@/utils/dateUtils";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useRouter } from "expo-router";
 import {
-  Alert,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Pressable,
   ScrollView,
@@ -13,15 +12,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 import { NoteAudioPlayerBubble } from "../../components/NoteAudioPlayerBubble";
 import { NoteCustomHeader } from "../../components/NoteCustomHeader";
 import { NoteTextInput } from "../../components/NoteTextInput";
-import { useNotes } from "../../store/hooks/useNotes";
-import { useNotesStore } from "../../store/notesStore";
-import { TodoItem } from "../../types";
 import { styles } from "./NoteEditor.styles";
-// 🔥 TodoItem tipini içeri aktarıyoruz
+import { useNoteEditor } from "./hooks/useNoteEditor";
 
 // Hazır popüler etiket seçenekleri
 const PREDEFINED_TAGS = [
@@ -34,130 +30,86 @@ const PREDEFINED_TAGS = [
 ];
 
 export function NoteEditorScreen() {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const { id } = useLocalSearchParams<{ id?: string }>();
-
   const {
-    addNote,
-    updateNote,
-    deleteNote,
-    activeWorkspaceId,
+    id,
+    existing,
+    isLoading,
     workspaces,
-    zenDraftContent,
-    zenDraftTodos,
-    zenDraftAudioUri,
-    setZenDraftContent,
-  } = useNotes();
+    activeWorkspaceId,
 
-  const existing = useNotesStore((s) => s.notes.find((n) => n.id === id));
+    title,
+    setTitle,
+    content,
+    setContent,
+    selectedTags,
+    audioUri,
+    todos,
 
-  const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
+    customTagInput,
+    setCustomTagInput,
+    isAddingCustom,
+    setIsAddingCustom,
+
+    toggleTag,
+    handleAddCustomTag,
+    handleSave,
+    handleAddBullet,
+    handleToggleTodo,
+
+    characterCount,
+    doneCount,
+  } = useNoteEditor();
+
+  const activeWorkspace = workspaces.find(
+    (workspace) => workspace.id === activeWorkspaceId,
+  );
+
   const currentPrimaryColor = activeWorkspace?.color || Colors.primary;
-
-  const [title, setTitle] = useState(existing?.title ?? "");
-  const [content, setContent] = useState(existing?.content ?? "");
-
-  // Seçilen etiketleri dizi olarak tutuyoruz
-  const [selectedTags, setSelectedTags] = useState<string[]>(
-    existing?.tags ?? [],
-  );
-
-  // Özel yeni etiket eklemek için input state'i
-  const [customTagInput, setCustomTagInput] = useState("");
-  const [isAddingCustom, setIsAddingCustom] = useState(false);
-
-  const clearZenDraft = setZenDraftContent;
-
-  const [audioUri, setAudioUri] = useState<string | null>(
-    existing?.audioUri ?? null,
-  );
-
-  // ✅ Not ekranındaki Yapılacaklar State'i (Başlangıçta mevcut nottan veya boş dizi)
-  const [todos, setTodos] = useState<TodoItem[]>(existing?.todos ?? []);
-
-  // Etiket seçme / kaldırma mantığı
-  const toggleTag = (tag: string) => {
-    if (selectedTags.includes(tag)) {
-      setSelectedTags(selectedTags.filter((t) => t !== tag));
-    } else {
-      setSelectedTags([...selectedTags, tag]);
-    }
-  };
-
-  // Kullanıcının özel etiket eklemesi
-  const handleAddCustomTag = () => {
-    const trimmed = customTagInput.trim();
-    if (trimmed && !selectedTags.includes(trimmed)) {
-      setSelectedTags([...selectedTags, trimmed]);
-    }
-    setCustomTagInput("");
-    setIsAddingCustom(false);
-  };
-
-  const handleSave = async () => {
-    if (!title.trim() && !content.trim() && !audioUri && todos.length === 0) {
-      router.back();
-      return;
-    }
-
-    if (id) {
-      await updateNote(id, title, content, selectedTags, audioUri, todos);
-    } else {
-      await addNote(title, content, selectedTags, audioUri, todos);
-    }
-    router.back();
-  };
-
-  const handleDelete = () => {
-    if (!id) return;
-    Alert.alert("Notu sil", "Bu not kalıcı olarak silinecek.", [
-      { text: "Vazgeç", style: "cancel" },
-      {
-        text: "Sil",
-        style: "destructive",
-        onPress: async () => {
-          await deleteNote(id);
-          router.back();
-        },
-      },
-    ]);
-  };
-
-  const handleAddBullet = () => {
-    const bulletPrefix =
-      content.length > 0 && !content.endsWith("\n") ? "\n" : "• ";
-    setContent(content + bulletPrefix);
-  };
-
-  // ✅ Sadece checkbox durumunu değiştiren fonksiyon (Not ekranında yeni madde eklenmez/silinmez)
-  const handleToggleTodo = (todoId: string) => {
-    setTodos((prev) =>
-      prev.map((t) => (t.id === todoId ? { ...t, done: !t.done } : t)),
+  // Düzenlenecek not yükleniyor
+  if (id && isLoading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
     );
-  };
+  }
 
-  const characterCount = content.length;
+  // Yükleme tamamlandı ama not bulunamadı
+  if (id && !existing) {
+    return (
+      <View
+        style={[
+          styles.container,
+          {
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 24,
+          },
+        ]}
+      >
+        <Ionicons
+          name="alert-circle-outline"
+          size={48}
+          color={Colors.textMuted}
+        />
 
-  // 🔥 Zen modundan dönünce içerik, ses ve yapılacakları güncelleme
-  // 🔥 Zen modundan dönünce içerik, ses ve yapılacakları güncelleme
-  useFocusEffect(
-    useCallback(() => {
-      if (zenDraftContent !== null && zenDraftContent !== undefined) {
-        setContent(zenDraftContent);
-        if (zenDraftAudioUri !== undefined) {
-          setAudioUri(zenDraftAudioUri);
-        }
-        if (zenDraftTodos !== undefined && zenDraftTodos !== null) {
-          setTodos(zenDraftTodos); // 👈 null kontrolü eklendi
-        }
-        clearZenDraft(null, null, null); // Zen draft'ı temizle
-      }
-    }, [zenDraftContent, zenDraftAudioUri, zenDraftTodos]),
-  );
+        <Text style={styles.sectionLabel}>Not bulunamadı</Text>
 
-  const doneCount = todos.filter((t) => t.done).length;
+        <Text style={{ color: Colors.textMuted, textAlign: "center" }}>
+          Düzenlemek istediğin not silinmiş olabilir.
+        </Text>
+
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={{ marginTop: 20 }}
+        >
+          <Text style={{ color: Colors.primary }}>Geri dön</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior="padding">
