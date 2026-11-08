@@ -1,11 +1,9 @@
 import { Colors } from "@/constants/colors";
-import { getCurrentFormattedTime } from "@/utils/dateUtils";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
-  Pressable,
   ScrollView,
   Text,
   TouchableOpacity,
@@ -17,7 +15,9 @@ import { NoteCustomHeader } from "../../components/NoteCustomHeader";
 import { NoteTextInput } from "../../components/NoteTextInput";
 import { NoteTodoList } from "../../components/NoteTodoList";
 import { styles } from "./NoteEditor.styles";
+import { NoteEditorMetaBar } from "./components/NoteEditorMetaBar";
 import { NoteEditorTags } from "./components/NoteEditorTags";
+import { NoteEditorToolbar } from "./components/NoteEditorToolbar";
 import { useNoteEditor } from "./hooks/useNoteEditor";
 
 export function NoteEditorScreen() {
@@ -29,7 +29,6 @@ export function NoteEditorScreen() {
     isLoading,
     workspaces,
     activeWorkspaceId,
-
     title,
     setTitle,
     content,
@@ -37,20 +36,16 @@ export function NoteEditorScreen() {
     selectedTags,
     audioUri,
     todos,
-
     customTagInput,
     setCustomTagInput,
     isAddingCustom,
     setIsAddingCustom,
-
     toggleTag,
     handleAddCustomTag,
     handleSave,
     handleAddBullet,
     handleToggleTodo,
-
     characterCount,
-    doneCount,
   } = useNoteEditor();
 
   const activeWorkspace = workspaces.find(
@@ -58,6 +53,7 @@ export function NoteEditorScreen() {
   );
 
   const currentPrimaryColor = activeWorkspace?.color || Colors.primary;
+
   // Düzenlenecek not yükleniyor
   if (id && isLoading) {
     return (
@@ -85,13 +81,10 @@ export function NoteEditorScreen() {
           size={48}
           color={Colors.textMuted}
         />
-
         <Text style={styles.sectionLabel}>Not bulunamadı</Text>
-
         <Text style={{ color: Colors.textMuted, textAlign: "center" }}>
           Düzenlemek istediğin not silinmiş olabilir.
         </Text>
-
         <TouchableOpacity
           onPress={() => router.back()}
           style={{ marginTop: 20 }}
@@ -142,41 +135,14 @@ export function NoteEditorScreen() {
         />
 
         <View style={styles.editorContainer}>
-          {/* Üst Kısım: Tarih ve Canlı Karakter Sayacı Rozeti */}
-          <View style={styles.editorHeaderMeta}>
-            <View
-              style={[
-                styles.metaBadge,
-                { borderColor: currentPrimaryColor + "40" },
-              ]}
-            >
-              <Ionicons
-                name="time-outline"
-                size={13}
-                color={currentPrimaryColor}
-              />
-              <Text style={[styles.metaText, { color: currentPrimaryColor }]}>
-                {getCurrentFormattedTime()}
-              </Text>
-            </View>
-            <View
-              style={[
-                styles.metaBadge,
-                { borderColor: currentPrimaryColor + "40" },
-              ]}
-            >
-              <Ionicons
-                name="text-outline"
-                size={13}
-                color={currentPrimaryColor}
-              />
-              <Text style={[styles.metaText, { color: currentPrimaryColor }]}>
-                {characterCount} karakter
-              </Text>
-            </View>
-          </View>
+          {/* Üst Kısım: Tarih ve Canlı Karakter Sayacı Rozetleri */}
+          <NoteEditorMetaBar
+            characterCount={characterCount}
+            currentPrimaryColor={currentPrimaryColor}
+            styles={styles}
+          />
 
-          {/* ✅ Sadece Görüntülenebilir & Checkbox İşlevli Yapılacaklar Listesi */}
+          {/* Yapılacaklar Listesi */}
           {todos.length > 0 && (
             <NoteTodoList
               todos={todos}
@@ -185,22 +151,12 @@ export function NoteEditorScreen() {
             />
           )}
 
-          {/* 🎙️ SESLİ NOT BLOKU */}
+          {/* Sesli Not Bloku */}
           {audioUri && (
-            <View style={styles.inlineAudioContainer}>
-              <View style={styles.audioHeaderRow}>
-                <Ionicons name="mic" size={14} color={currentPrimaryColor} />
-                <Text
-                  style={[
-                    styles.audioLabelText,
-                    { color: currentPrimaryColor },
-                  ]}
-                >
-                  Sesli Not
-                </Text>
-              </View>
-              <NoteAudioPlayerBubble uri={audioUri} />
-            </View>
+            <NoteAudioPlayerBubble
+              uri={audioUri}
+              primaryColor={currentPrimaryColor}
+            />
           )}
 
           {/* İçerik Inputu */}
@@ -214,33 +170,15 @@ export function NoteEditorScreen() {
             activeColor={currentPrimaryColor}
           />
 
-          {/* Alt Kısım: İşlevsel Araç Çubuğu (Zen moda currentTodos gönderiliyor) */}
-          <View style={styles.editorToolbar}>
-            <Pressable style={styles.toolbarButton} onPress={handleAddBullet}>
-              <Ionicons name="list" size={18} color={currentPrimaryColor} />
-              <Text style={styles.toolbarButtonText}>Madde Ekle</Text>
-            </Pressable>
-            <Pressable
-              style={styles.toolbarButton}
-              onPress={() =>
-                router.push({
-                  pathname: "/zen-editor",
-                  params: {
-                    currentContent: content,
-                    currentTodos: JSON.stringify(todos), // 🔥 Zen moda mevcut yapılacakları aktarıyoruz
-                    currentAudioUri: audioUri ?? "",
-                  },
-                })
-              }
-            >
-              <Ionicons
-                name="expand-outline"
-                size={18}
-                color={currentPrimaryColor}
-              />
-              <Text style={styles.toolbarButtonText}>Zen Modu</Text>
-            </Pressable>
-          </View>
+          {/* Alt Araç Çubuğu */}
+          <NoteEditorToolbar
+            content={content}
+            todos={todos}
+            audioUri={audioUri}
+            currentPrimaryColor={currentPrimaryColor}
+            handleAddBullet={handleAddBullet}
+            styles={styles}
+          />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

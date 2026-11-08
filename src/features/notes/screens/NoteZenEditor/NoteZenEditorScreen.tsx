@@ -384,20 +384,12 @@ export function NoteZenEditorScreen() {
 
       {/* 🔥 Zen Modda Kaydedilen Sesin Önizlemesi ve İptal Butonu */}
       {recordedAudioUri && (
-        <View style={styles.zenAudioPreviewContainer}>
-          <View style={styles.zenAudioHeader}>
-            <Text style={styles.zenAudioTitle}>Sesli Not (Ekli)</Text>
-            <TouchableOpacity
-              onPress={handleDeleteRecordedAudio}
-              style={styles.deleteAudioBtn}
-              hitSlop={8}
-            >
-              <Ionicons name="trash-outline" size={16} color="#EF4444" />
-              <Text style={styles.deleteAudioText}>Kaldır</Text>
-            </TouchableOpacity>
-          </View>
-          <NoteAudioPlayerBubble uri={recordedAudioUri} />
-        </View>
+        <NoteAudioPlayerBubble
+          uri={recordedAudioUri}
+          primaryColor={currentPrimaryColor}
+          labelTitle="Sesli Not (Ekli)"
+          onDelete={handleDeleteRecordedAudio} // 🔥 Sadece bu fonksiyonu vermen yeterli!
+        />
       )}
 
       {/* ✅ Yapılacaklar Kartı */}

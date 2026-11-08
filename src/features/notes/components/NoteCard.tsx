@@ -185,9 +185,10 @@ export function NoteCard({
 
         {/* Sesli Not Oynatıcısı */}
         {note.audioUri && (
-          <View style={styles.audioBubbleWrapper}>
-            <NoteAudioPlayerBubble uri={note.audioUri} />
-          </View>
+          <NoteAudioPlayerBubble
+            uri={note.audioUri}
+            primaryColor={currentPrimaryColor}
+          />
         )}
 
         {/* Etiketler */}
