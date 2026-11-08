@@ -88,6 +88,50 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     gap: 16,
   },
+  // NotesList.styles.ts içerisine eklenecek veya güncellenecek kısımlar:
+
+  selectionFloatingBar: {
+    position: "absolute",
+    bottom: 30,
+    left: 20,
+    right: 20,
+    backgroundColor: "#1E1E1E", // Modern koyu tema arkaplanı veya tema renginiz
+    borderRadius: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 10,
+    zIndex: 100,
+  },
+  selectionLeftInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  selectionCountBadge: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  selectionRightActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  actionIconButton: {
+    padding: 8,
+    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+  },
+  deleteIconButton: {
+    backgroundColor: "rgba(255, 69, 58, 0.15)",
+  },
   cancelText: {
     fontSize: 15,
     color: Colors.textMuted,

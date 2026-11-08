@@ -24,6 +24,8 @@ export function useUiStore() {
   const selectAllNotes = useNotesStore((s) => s.selectAllNotes);
   const clearSelection = useNotesStore((s) => s.clearSelection);
 
+  const setSelectedNoteIds = useNotesStore((s) => s.setSelectedNoteIds);
+
   const zenDraftContent = useNotesStore((s) => s.zenDraftContent);
   const zenDraftAudioUri = useNotesStore((s) => s.zenDraftAudioUri);
   const zenDraftTodos = useNotesStore((s) => s.zenDraftTodos);
@@ -38,6 +40,7 @@ export function useUiStore() {
     toggleSelectNote,
     selectAllNotes,
     clearSelection,
+    setSelectedNoteIds,
 
     isSearchOpen,
     toggleSearch,

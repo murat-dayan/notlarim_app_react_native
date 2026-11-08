@@ -19,6 +19,7 @@ export type UiSlice = {
   toggleSelectNote: (id: string) => void;
   selectAllNotes: () => void;
   clearSelection: () => void;
+  setSelectedNoteIds: (ids: string[]) => void;
   toggleSearch: () => void;
   toggleSortMenu: () => void;
   closeSortMenu: () => void;
@@ -78,6 +79,13 @@ export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (
     set({
       selectedNoteIds: [],
       isSelectionMode: false,
+    });
+  },
+
+  setSelectedNoteIds: (ids) => {
+    set({
+      selectedNoteIds: ids,
+      isSelectionMode: ids.length > 0,
     });
   },
 

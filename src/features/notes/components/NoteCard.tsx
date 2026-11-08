@@ -27,7 +27,7 @@ export function NoteCard({
   const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
   const currentPrimaryColor = activeWorkspace?.color || Colors.primary;
 
-  const updateNote = useNotesStore((s) => s.updateNote); // 🔥 Notu güncellemek için
+  const updateNote = useNotesStore((s) => s.updateNote);
 
   const formattedDate = new Date(
     note.updatedAt || Date.now(),
@@ -36,13 +36,11 @@ export function NoteCard({
     month: "short",
   });
 
-  // ✅ Kart üzerindeki bir yapılacak maddesinin tik durumunu değiştirir
   const handleToggleCardTodo = (todoId: string) => {
     if (!note.todos) return;
     const updatedTodos = note.todos.map((t) =>
       t.id === todoId ? { ...t, done: !t.done } : t,
     );
-    // Notu mevcut başlık, içerik, etiket, ses ve güncel todos ile güncelliyoruz
     updateNote(
       note.id,
       note.title,
@@ -63,7 +61,6 @@ export function NoteCard({
           styles.selectedCard,
           {
             borderColor: currentPrimaryColor,
-            backgroundColor: `${currentPrimaryColor}0D`,
           },
         ],
         pressed && styles.pressedCard,
@@ -71,6 +68,17 @@ export function NoteCard({
       onPress={onPress}
       onLongPress={onLongPress}
     >
+      {/* ✨ SEÇİLDİĞİNDE KARTIN ÜZERİNİ KAPLAYAN ŞEFFAF RENKLİ TÜL KATMANI */}
+      {isSelected && (
+        <View
+          style={[
+            styles.selectionOverlay,
+            { backgroundColor: `${currentPrimaryColor}14` }, // %8 oranında şeffaf tül katmanı (workspace rengiyle uyumlu)
+          ]}
+          pointerEvents="none" // Tıklama olaylarının alt elemanlara (örneğin pin butonuna) engelsiz ulaşmasını sağlar
+        />
+      )}
+
       {/* Sol taraftaki şık dikey aksan çizgisi */}
       <View
         style={[styles.accentBar, { backgroundColor: currentPrimaryColor }]}
@@ -82,6 +90,7 @@ export function NoteCard({
             {note.title || "Başlıksız Not"}
           </Text>
 
+          {/* Hap Şeklinde Modern Pin Butonu */}
           {isSelectionMode ? (
             <Pressable
               onPress={(e) => {
@@ -89,19 +98,29 @@ export function NoteCard({
                 onTogglePin();
               }}
               style={[
-                styles.selectionPinButton,
+                styles.modernPinPill,
                 {
-                  backgroundColor: `${currentPrimaryColor}15`,
-                  borderColor: `${currentPrimaryColor}30`,
+                  backgroundColor: note.isPinned
+                    ? currentPrimaryColor
+                    : "#F1F5F9",
+                  borderColor: note.isPinned ? currentPrimaryColor : "#E2E8F0",
                 },
               ]}
               hitSlop={8}
             >
               <Ionicons
                 name={note.isPinned ? "pin" : "pin-outline"}
-                size={16}
-                color={currentPrimaryColor}
+                size={13}
+                color={note.isPinned ? "#FFFFFF" : "#64748B"}
               />
+              <Text
+                style={[
+                  styles.pinPillText,
+                  { color: note.isPinned ? "#FFFFFF" : "#64748B" },
+                ]}
+              >
+                {note.isPinned ? "İğnelendi" : "İğnele"}
+              </Text>
             </Pressable>
           ) : (
             note.isPinned && (
@@ -117,7 +136,7 @@ export function NoteCard({
           {note.content || "İçerik bulunmuyor..."}
         </Text>
 
-        {/* ✅ Ana Sayfa Kart İçinde Yapılacaklar Listesi */}
+        {/* Yapılacaklar Listesi */}
         {note.todos && note.todos.length > 0 && (
           <View
             style={[
@@ -141,7 +160,7 @@ export function NoteCard({
                 key={todo.id}
                 style={styles.cardTodoRow}
                 onPress={(e) => {
-                  e.stopPropagation(); // Kartın Detay Sayfasına gitmesini engeller, sadece tike basar
+                  e.stopPropagation();
                   handleToggleCardTodo(todo.id);
                 }}
               >
@@ -164,14 +183,14 @@ export function NoteCard({
           </View>
         )}
 
-        {/* 🎙️ SESLİ NOT OYNATICISI */}
+        {/* Sesli Not Oynatıcısı */}
         {note.audioUri && (
           <View style={styles.audioBubbleWrapper}>
             <NoteAudioPlayerBubble uri={note.audioUri} />
           </View>
         )}
 
-        {/* 🔥 Etiketler */}
+        {/* Etiketler */}
         {note.tags && note.tags.length > 0 && (
           <View style={styles.tagsContainer}>
             {note.tags.map((tag, index) => (
@@ -201,6 +220,7 @@ export function NoteCard({
           <View style={styles.rightFooter}>
             <Text style={styles.dateText}>{formattedDate}</Text>
 
+            {/* Modern Checkbox */}
             {isSelectionMode && (
               <View
                 style={[
@@ -214,7 +234,9 @@ export function NoteCard({
                   ],
                 ]}
               >
-                {isSelected && <View style={styles.innerDot} />}
+                {isSelected && (
+                  <Ionicons name="checkmark" size={13} color="#FFFFFF" />
+                )}
               </View>
             )}
           </View>
@@ -228,7 +250,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: "#EAEEF4",
     flexDirection: "row",
     alignItems: "stretch",
@@ -239,20 +261,35 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 3,
   },
+  // ✨ Tül Katman Stili
+  selectionOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1, // İçeriklerin üstünde ama tıklamaları engellemeyecek şekilde konumlanır
+  },
   pressedCard: {
     transform: [{ scale: 0.98 }],
     opacity: 0.9,
   },
-  selectedCard: {},
+  selectedCard: {
+    transform: [{ scale: 0.985 }],
+    borderWidth: 2,
+    shadowOpacity: 0.1,
+  },
   accentBar: {
     width: 5,
     borderTopLeftRadius: 16,
     borderBottomLeftRadius: 16,
+    zIndex: 2,
   },
   textContainer: {
     flex: 1,
     padding: 16,
     paddingLeft: 14,
+    zIndex: 2, // Tül katmanın üzerinde net görünmesi için
   },
   headerRow: {
     flexDirection: "row",
@@ -276,13 +313,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginLeft: 8,
   },
+  modernPinPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginLeft: 8,
+  },
+  pinPillText: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
   content: {
     fontSize: 14,
     color: "#475569",
     lineHeight: 21,
     marginBottom: 8,
   },
-  // ✅ Kart içi yapılacaklar listesi stilleri
   cardTodoContainer: {
     backgroundColor: "#F8FAFC",
     borderRadius: 10,
@@ -327,15 +377,6 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 6,
     marginBottom: 10,
-  },
-  selectionPinButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 8,
-    borderWidth: 1,
   },
   tagBadge: {
     backgroundColor: "#F1F5F9",
@@ -383,9 +424,9 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   modernCheckbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 2,
     borderColor: "#CBD5E1",
     justifyContent: "center",
@@ -393,10 +434,4 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   modernCheckedBox: {},
-  innerDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#FFFFFF",
-  },
 });
