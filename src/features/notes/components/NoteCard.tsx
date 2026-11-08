@@ -370,9 +370,6 @@ const styles = StyleSheet.create({
     textDecorationLine: "line-through",
     color: Colors.textMuted,
   },
-  audioBubbleWrapper: {
-    marginBottom: 10,
-  },
   tagsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",

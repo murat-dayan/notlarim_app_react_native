@@ -1,5 +1,6 @@
 import { Colors } from "@/constants/colors";
 import { useNotesStore } from "@/features/notes/store/notesStore";
+import { useConfirmStore } from "@/store/useConfirmStore";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
@@ -27,6 +28,8 @@ const PRESET_COLORS = [
 ];
 
 export function NoteWorkspaceModal({ visible, onClose }: Props) {
+  const { showConfirm } = useConfirmStore();
+
   const workspaces = useNotesStore((s) => s.workspaces);
   const activeWorkspaceId = useNotesStore((s) => s.activeWorkspaceId);
   const setActiveWorkspaceId = useNotesStore((s) => s.setActiveWorkspaceId);
@@ -123,7 +126,13 @@ export function NoteWorkspaceModal({ visible, onClose }: Props) {
                     )}
                     {workspaces.length > 1 && (
                       <Pressable
-                        onPress={() => deleteWorkspace(workspace.id)}
+                        onPress={() => {
+                          showConfirm({
+                            title: "Çalışma Alanı Sil",
+                            message: `${workspace.name} alanını silmek istediğine emin misin?`,
+                            onConfirm: () => deleteWorkspace(workspace.id),
+                          });
+                        }}
                         style={styles.deleteIcon}
                       >
                         <Ionicons

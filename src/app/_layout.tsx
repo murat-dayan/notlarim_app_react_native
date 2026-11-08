@@ -1,3 +1,4 @@
+import { GlobalConfirmModal } from "@/components/GlobalConfirmModal";
 import { useNotesStore } from "@/features/notes/store/notesStore";
 import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
@@ -12,7 +13,7 @@ export default function RootLayout() {
   });
 
   const loadNotes = useNotesStore((s) => s.loadNotes);
-  const loadWorkspaces = useNotesStore((s) => s.loadWorkspaces); // 🔥 Eklendi
+  const loadWorkspaces = useNotesStore((s) => s.loadWorkspaces);
 
   useEffect(() => {
     if (fontsLoaded) {
@@ -22,7 +23,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     loadNotes();
-    loadWorkspaces(); // 🔥 Uygulama açılır açılmaz çalışma alanlarını yüklüyoruz
+    loadWorkspaces();
   }, [loadNotes, loadWorkspaces]);
 
   if (!fontsLoaded) {
@@ -34,11 +35,17 @@ export default function RootLayout() {
   }
 
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="editor" options={{ headerShown: false }} />
-      <Stack.Screen name="locked-notes" options={{ headerShown: false }} />
-      <Stack.Screen name="zen-editor" options={{ headerShown: false }} />
-    </Stack>
+    // 🔥 Stack bileşenini bir View içine alıp altına GlobalConfirmModal'ı ekliyoruz
+    <View style={{ flex: 1 }}>
+      <Stack>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="editor" options={{ headerShown: false }} />
+        <Stack.Screen name="locked-notes" options={{ headerShown: false }} />
+        <Stack.Screen name="zen-editor" options={{ headerShown: false }} />
+      </Stack>
+
+      {/* 🔥 İşte ekranda görünmesini sağlayacak sihirli dokunuş burada! */}
+      <GlobalConfirmModal />
+    </View>
   );
 }

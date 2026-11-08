@@ -21,6 +21,7 @@ import { NotesHeader } from "./components/NotesHeader";
 import { NotesSelectionBar } from "./components/NotesSelectionBar";
 import { NotesTagFilterBar } from "./components/NotesTagFilterBar";
 
+import { useConfirmStore } from "@/store/useConfirmStore";
 import { styles } from "./NotesList.styles";
 
 export function NotesListScreen() {
@@ -50,6 +51,8 @@ export function NotesListScreen() {
   const [isWorkspaceModalVisible, setIsWorkspaceModalVisible] = useState(false);
   const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
   const currentPrimaryColor = activeWorkspace?.color || Colors.primary;
+
+  const { showConfirm } = useConfirmStore();
 
   // 1. Filtreleme ve Arama Hook'u
   const {
@@ -189,7 +192,13 @@ export function NotesListScreen() {
           isAllSelected={isAllSelected}
           handleToggleSelectAll={handleToggleSelectAll}
           toggleLockNote={toggleLockNote}
-          deleteSelectedNotes={deleteSelectedNotes}
+          deleteSelectedNotes={() => {
+            showConfirm({
+              title: "Notları Sil",
+              message: "Seçili Notları Silmek İstediğine Emin Misin?",
+              onConfirm: deleteSelectedNotes,
+            });
+          }}
           currentPrimaryColor={currentPrimaryColor}
           bottomInset={insets.bottom}
           styles={styles}

@@ -1,494 +1,160 @@
+// NoteZenEditor/NoteZenEditorScreen.tsx
 import { Colors } from "@/constants/colors";
-import { getCurrentFormattedTime } from "@/utils/dateUtils";
-import { Ionicons } from "@expo/vector-icons";
-import {
-  AudioModule,
-  RecordingPresets,
-  setAudioModeAsync,
-  useAudioRecorder,
-} from "expo-audio";
-import { File, Paths } from "expo-file-system";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
-import {
-  Animated,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { KeyboardAvoidingView, Platform, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { NoteAudioPlayerBubble } from "../../components/NoteAudioPlayerBubble"; // 🔥 Zen modda dinlemek için
-import { NoteTodoList } from "../../components/NoteTodoList";
-import { useNotes } from "../../store/hooks/useNotes";
-import { TodoItem } from "../../types";
-import { styles } from "./NoteZenEditor.styles";
 
-const BUBBLE_COUNT = 7;
+import { useConfirmStore } from "@/store/useConfirmStore";
+import { NoteAudioPlayerBubble } from "../../components/NoteAudioPlayerBubble";
+import { NoteZenEmojiPanel } from "./components/NoteZenEmojiPanel";
+import { NoteZenFloatingToolbar } from "./components/NoteZenFloatingToolbar";
+import { NoteZenHeader } from "./components/NoteZenHeader";
+import { NoteZenTodoPanel } from "./components/NoteZenTodoPanel";
+import { useZenEditor } from "./hooks/useZenEditor";
+import { styles } from "./NoteZenEditor.styles";
 
 export function NoteZenEditorScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const { currentContent, currentTodos, currentAudioUri } =
-    useLocalSearchParams<{
-      currentContent?: string;
-      currentTodos?: string;
-      currentAudioUri?: string;
-    }>();
+  const {
+    content,
+    setContent,
+    setSelection,
+    isToolsOpen,
+    setIsToolsOpen,
+    activeWorkspace,
+    wordCount,
+    readingTime,
+    doneCount,
+    isRecording,
+    recordedAudioUri,
+    setRecordedAudioUri,
+    todos,
+    setTodos,
+    isTodoPanelOpen,
+    isTodoPanelMinimized,
+    newTodoText,
+    setNewTodoText,
+    isEmojiPanelOpen,
+    isEmojiPanelMinimized,
+    bubbleAnims,
+    mainRotate,
+    handleInsertTimestamp,
+    handleInsertBullet,
+    handleInsertEmoji,
+    handleToggleVoiceRecord,
+    handleTransferAndExit,
+    setIsTodoPanelOpen,
+    setIsTodoPanelMinimized,
+    setIsEmojiPanelOpen,
+    setIsEmojiPanelMinimized,
+  } = useZenEditor();
 
-  const { setZenDraftContent, workspaces, activeWorkspaceId } = useNotes();
+  const { showConfirm } = useConfirmStore();
 
-  const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
   const currentPrimaryColor = activeWorkspace?.color || Colors.primary;
 
-  const [content, setContent] = useState(currentContent ?? "");
-  const [selection, setSelection] = useState({ start: 0, end: 0 });
-  const [isToolsOpen, setIsToolsOpen] = useState(false);
-
-  // 🎙️ Ses Kayıt State'leri (expo-audio)
-  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordedAudioUri, setRecordedAudioUri] = useState<string | null>(
-    currentAudioUri && currentAudioUri.trim() !== "" ? currentAudioUri : null,
-  );
-
-  // 🌸 Her baloncuğun kendi animasyon değeri
-  const bubbleAnims = useRef(
-    Array.from({ length: BUBBLE_COUNT }, () => new Animated.Value(0)),
-  ).current;
-  const mainRotate = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const opening = isToolsOpen;
-    const ordered = opening ? bubbleAnims : [...bubbleAnims].reverse();
-
-    Animated.parallel([
-      Animated.spring(mainRotate, {
-        toValue: opening ? 1 : 0,
-        useNativeDriver: true,
-        tension: 120,
-        friction: 7,
-      }),
-      Animated.stagger(
-        opening ? 45 : 30,
-        ordered.map((anim) =>
-          Animated.spring(anim, {
-            toValue: opening ? 1 : 0,
-            useNativeDriver: true,
-            tension: opening ? 140 : 180,
-            friction: opening ? 5 : 10,
-            overshootClamping: !opening,
-          }),
-        ),
-      ),
-    ]).start();
-  }, [isToolsOpen]);
-
-  const mainRotateDeg = mainRotate.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "180deg"],
-  });
-
-  const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
-  const readingTime = Math.ceil(wordCount / 200);
-
-  // Tarih Ekle
-  const handleInsertTimestamp = () => {
-    const timestamp = getCurrentFormattedTime();
-    const formattedText = `${timestamp} — `;
-    const { start, end } = selection;
-
-    const newContent =
-      content.substring(0, start) + formattedText + content.substring(end);
-
-    setContent(newContent);
-  };
-
-  // Madde Ekle
-  const handleInsertBullet = () => {
-    const { start } = selection;
-    const needsNewLine = start > 0 && content[start - 1] !== "\n";
-    const bulletText = needsNewLine ? "\n• " : "• ";
-
-    const newContent =
-      content.substring(0, start) + bulletText + content.substring(start);
-
-    setContent(newContent);
-  };
-
-  const QUICK_EMOJIS = [
-    "😊",
-    "😂",
-    "❤️",
-    "👍",
-    "🔥",
-    "🎯",
-    "💡",
-    "✅",
-    "⭐",
-    "🎉",
-  ];
-
-  const [isEmojiPanelOpen, setIsEmojiPanelOpen] = useState(false);
-  const [isEmojiPanelMinimized, setIsEmojiPanelMinimized] = useState(false);
-
-  // ✅ Yapılacaklar State'leri
-  const [todos, setTodos] = useState<TodoItem[]>(() => {
-    try {
-      return currentTodos ? JSON.parse(currentTodos) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  const [isTodoPanelOpen, setIsTodoPanelOpen] = useState(
-    () => todos.length > 0,
-  );
-
-  const [isTodoPanelMinimized, setIsTodoPanelMinimized] = useState(false); // 🆕 Yeni state
-  const [newTodoText, setNewTodoText] = useState("");
-
-  const doneCount = todos.filter((t) => t.done).length;
-
-  // Emoji Ekle
-  const handleInsertEmoji = (emoji: string) => {
-    const { start, end } = selection;
-    const newContent =
-      content.substring(0, start) + emoji + content.substring(end);
-
-    setContent(newContent);
-
-    // Art arda eklemede imleç doğru yerde kalsın
-    const newPos = start + emoji.length;
-    setSelection({ start: newPos, end: newPos });
-  };
-
-  // Emoji panelini aç/kapat (küçültülmüşse geri açar)
-  const handleToggleEmojiPanel = () => {
-    if (isEmojiPanelOpen && isEmojiPanelMinimized) {
-      setIsEmojiPanelMinimized(false);
-    } else {
-      setIsEmojiPanelOpen((prev) => !prev);
-      setIsEmojiPanelMinimized(false);
-    }
-    setIsToolsOpen(false);
-  };
-
-  // Paneli tamamen kapat
-  const handleCloseEmojiPanel = () => {
-    setIsEmojiPanelOpen(false);
-    setIsEmojiPanelMinimized(false);
-  };
-
-  // Yapılacaklar kartını aç/kapat (küçültülmüşse geri açar)
   const handleToggleTodoPanel = () => {
-    if (isTodoPanelOpen && isTodoPanelMinimized) {
-      setIsTodoPanelMinimized(false);
-    } else {
-      setIsTodoPanelOpen((prev) => !prev);
-      setIsTodoPanelMinimized(false);
-    }
+    if (isTodoPanelOpen && isTodoPanelMinimized) setIsTodoPanelMinimized(false);
+    else setIsTodoPanelOpen(!isTodoPanelOpen);
     setIsToolsOpen(false);
   };
 
-  // Yapılacaklar panelini tamamen kapat
-  const handleCloseTodoPanel = () => {
-    setIsTodoPanelOpen(false);
-    setIsTodoPanelMinimized(false);
+  const handleToggleEmojiPanel = () => {
+    if (isEmojiPanelOpen && isEmojiPanelMinimized)
+      setIsEmojiPanelMinimized(false);
+    else setIsEmojiPanelOpen(!isEmojiPanelOpen);
+    setIsToolsOpen(false);
   };
-
-  // Yapılacaklar panelini küçült (sol altta baloncuk olarak kalır)
-  const handleMinimizeTodoPanel = () => {
-    setIsTodoPanelMinimized(true);
-  };
-
-  // Küçültülmüş yapılacaklar panelini geri aç
-  const handleRestoreTodoPanel = () => {
-    setIsTodoPanelMinimized(false);
-  };
-
-  const handleAddTodo = () => {
-    const text = newTodoText.trim();
-    if (!text) return;
-
-    setTodos((prev) => [
-      ...prev,
-      { id: Date.now().toString(), text, done: false },
-    ]);
-    setNewTodoText("");
-  };
-
-  const handleToggleTodo = (id: string) => {
-    setTodos((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
-    );
-  };
-
-  const handleDeleteTodo = (id: string) => {
-    setTodos((prev) => prev.filter((t) => t.id !== id));
-  };
-
-  // Paneli küçült (sol altta baloncuk olarak kalır)
-  const handleMinimizeEmojiPanel = () => {
-    setIsEmojiPanelMinimized(true);
-  };
-
-  // Küçültülmüş paneli geri aç
-  const handleRestoreEmojiPanel = () => {
-    setIsEmojiPanelMinimized(false);
-  };
-
-  // 🎙️ SES KAYDI BAŞLAT / DURDUR VE TEK KAYIT KONTROLÜ
-  const handleToggleVoiceRecord = async () => {
-    try {
-      if (isRecording) {
-        setIsRecording(false);
-        await audioRecorder.stop();
-        const uri = audioRecorder.uri;
-
-        if (uri) {
-          const fileName = `voice_note_${Date.now()}.m4a`;
-          const sourceFile = new File(uri);
-          const destinationFile = new File(Paths.document, fileName);
-
-          sourceFile.copy(destinationFile);
-          setRecordedAudioUri(destinationFile.uri);
-          // 🔥 Artık content içine çöp metin yazılmıyor!
-        }
-        setIsToolsOpen(false);
-      } else {
-        // 🔥 Zaten kayıtlı bir ses varsa ikinci kez kayda izin verme, uyar
-        if (recordedAudioUri) {
-          alert(
-            "Zaten bir ses kaydı mevcut. Yeni kayıt eklemek için önce mevcut kaydı silmelisiniz.",
-          );
-          return;
-        }
-
-        const permission = await AudioModule.requestRecordingPermissionsAsync();
-        if (!permission.granted) {
-          alert("Ses kaydı için mikrofon izni gereklidir!");
-          return;
-        }
-
-        await setAudioModeAsync({
-          allowsRecording: true,
-          playsInSilentMode: true,
-        });
-
-        await audioRecorder.prepareToRecordAsync();
-        audioRecorder.record();
-        setIsRecording(true);
-      }
-    } catch (err) {
-      console.error("Ses kaydı hatası:", err);
-      setIsRecording(false);
-    }
-  };
-
-  // 🔥 Kaydedilen sesi silme / iptal etme
-  const handleDeleteRecordedAudio = () => {
-    setRecordedAudioUri(null);
-  };
-
-  const handleTransferAndExit = () => {
-    setZenDraftContent(content, recordedAudioUri, todos);
-    router.back();
-  };
-  // Baloncuk Konumları
-  const bubbles = [
-    {
-      key: "b3",
-      icon: "bookmark-outline",
-      x: 0,
-      y: -60,
-      onPress: handleToggleTodoPanel,
-    },
-    { key: "b1", icon: "sparkles-outline", x: 0, y: -140, onPress: () => {} },
-    {
-      key: "b7",
-      icon: "time-outline",
-      x: -60,
-      y: 0,
-      onPress: handleInsertTimestamp,
-    },
-    {
-      key: "b6",
-      icon: "happy-outline",
-      x: -140,
-      y: 0,
-      onPress: handleToggleEmojiPanel,
-    },
-    {
-      key: "b4",
-      icon: "list-outline",
-      x: -60,
-      y: -60,
-      onPress: handleInsertBullet,
-    },
-    { key: "b5", icon: "text-outline", x: -125, y: -65, onPress: () => {} },
-    {
-      key: "b2",
-      icon: isRecording ? "stop" : "volume-high",
-      x: -70,
-      y: -125,
-      onPress: handleToggleVoiceRecord,
-    },
-  ];
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={[styles.container, { paddingTop: insets.top + 12 }]}
     >
-      {/* Üst Bar */}
-      <View style={styles.topBar}>
-        <View style={styles.statsContainer}>
-          <Text style={[styles.statText, { color: currentPrimaryColor }]}>
-            {wordCount} kelime
-          </Text>
-          <Text style={styles.dot}>•</Text>
-          <Text style={[styles.statText, { color: currentPrimaryColor }]}>
-            {readingTime} dk okuma
-          </Text>
-        </View>
+      {/* Üst Header */}
+      <NoteZenHeader
+        wordCount={wordCount}
+        readingTime={readingTime}
+        isRecording={isRecording}
+        currentPrimaryColor={currentPrimaryColor}
+        handleTransferAndExit={handleTransferAndExit}
+        styles={styles}
+      />
 
-        {isRecording && (
-          <View style={styles.recordingIndicator}>
-            <View style={styles.recordingDot} />
-            <Text style={styles.recordingText}>Kayıt Alınıyor...</Text>
-          </View>
-        )}
-
-        <TouchableOpacity
-          style={[
-            styles.exitButton,
-            { borderColor: currentPrimaryColor + "40" },
-          ]}
-          onPress={handleTransferAndExit}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name="checkmark-outline"
-            size={16}
-            color={currentPrimaryColor}
-          />
-          <Text style={[styles.exitText, { color: currentPrimaryColor }]}>
-            Aktar & Dön
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* 🔥 Zen Modda Kaydedilen Sesin Önizlemesi ve İptal Butonu */}
+      {/* Ekli Sesli Not Önizlemesi */}
       {recordedAudioUri && (
         <NoteAudioPlayerBubble
           uri={recordedAudioUri}
           primaryColor={currentPrimaryColor}
           labelTitle="Sesli Not (Ekli)"
-          onDelete={handleDeleteRecordedAudio} // 🔥 Sadece bu fonksiyonu vermen yeterli!
+          onDelete={() => {
+            showConfirm({
+              title: "Ses Kaydını Kaldır",
+              message:
+                "Ekli olan bu ses kaydını silmek istediğinden emin misin?",
+              onConfirm: () => setRecordedAudioUri(null),
+            });
+          }}
         />
       )}
 
-      {/* ✅ Yapılacaklar Kartı */}
-      {/* ✅ Yapılacaklar Kartı */}
-      {isTodoPanelOpen && !isTodoPanelMinimized && (
-        <View
-          style={[styles.todoCard, { borderColor: currentPrimaryColor + "30" }]}
-        >
-          <View style={styles.todoHeader}>
-            <Text style={[styles.todoTitle, { color: currentPrimaryColor }]}>
-              Yapılacaklar
-            </Text>
-            <View style={styles.todoHeaderRight}>
-              {todos.length > 0 && (
-                <Text style={styles.todoCounter}>
-                  {doneCount}/{todos.length} tamamlandı
-                </Text>
-              )}
-              {/* 🔽 Küçültme Butonu */}
-              <TouchableOpacity
-                onPress={handleMinimizeTodoPanel}
-                hitSlop={8}
-                style={styles.todoHeaderBtn}
-              >
-                <Ionicons
-                  name="chevron-down"
-                  size={18}
-                  color={currentPrimaryColor}
-                />
-              </TouchableOpacity>
-              {/* ❌ Tamamen Kapatma Butonu */}
-              <TouchableOpacity
-                onPress={handleCloseTodoPanel}
-                hitSlop={8}
-                style={styles.todoHeaderBtn}
-              >
-                <Ionicons name="close" size={18} color={currentPrimaryColor} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {todos.length > 0 && (
-            <ScrollView
-              style={styles.todoList}
-              nestedScrollEnabled
-              keyboardShouldPersistTaps="handled"
-            >
-              <NoteTodoList
-                todos={todos}
-                primaryColor={currentPrimaryColor}
-                onToggleTodo={handleToggleTodo}
-                onDeleteTodo={handleDeleteTodo}
-                variant="plain"
-              />
-            </ScrollView>
-          )}
-
-          <View style={styles.todoInputRow}>
-            <TextInput
-              style={styles.todoInput}
-              placeholder="Yeni madde ekle..."
-              placeholderTextColor={Colors.textMuted}
-              value={newTodoText}
-              onChangeText={setNewTodoText}
-              onSubmitEditing={handleAddTodo}
-              returnKeyType="done"
-              submitBehavior="submit"
-            />
-            <TouchableOpacity
-              onPress={handleAddTodo}
-              style={[
-                styles.todoAddBtn,
-                { backgroundColor: currentPrimaryColor + "20" },
-              ]}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="add" size={20} color={currentPrimaryColor} />
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
-      {/* ✅ Küçültülmüş Yapılacaklar Baloncuğu */}
-      {isTodoPanelOpen && isTodoPanelMinimized && (
-        <TouchableOpacity
-          onPress={handleRestoreTodoPanel}
-          activeOpacity={0.7}
-          style={[
-            styles.minimizedTodoBubble,
-            { borderColor: currentPrimaryColor + "40" },
-          ]}
-        >
-          <Ionicons
-            name="bookmark-outline"
-            size={20}
-            color={currentPrimaryColor}
-          />
-        </TouchableOpacity>
-      )}
+      {/* Yapılacaklar Paneli */}
+      <NoteZenTodoPanel
+        isTodoPanelOpen={isTodoPanelOpen}
+        isTodoPanelMinimized={isTodoPanelMinimized}
+        todos={todos}
+        doneCount={doneCount}
+        newTodoText={newTodoText}
+        setNewTodoText={setNewTodoText}
+        currentPrimaryColor={currentPrimaryColor}
+        handleMinimizeTodoPanel={() => setIsTodoPanelMinimized(true)}
+        handleCloseTodoPanel={() => {
+          if (todos.length === 0) {
+            setIsTodoPanelOpen(false);
+            setIsTodoPanelMinimized(false);
+            return;
+          }
+          showConfirm({
+            title: "Listeyi Temizle & Kapat",
+            message:
+              "Yapılacaklar listesini kapatmak istiyor musun? Listedeki tüm maddeler silinecek.",
+            confirmText: "Evet, Temizle",
+            onConfirm: () => {
+              setTodos([]);
+              setIsTodoPanelOpen(false);
+              setIsTodoPanelMinimized(false);
+            },
+          });
+        }}
+        handleRestoreTodoPanel={() => setIsTodoPanelMinimized(false)}
+        handleAddTodo={() => {
+          if (!newTodoText.trim()) return;
+          setTodos((prev: any) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              text: newTodoText.trim(),
+              done: false,
+            },
+          ]);
+          setNewTodoText("");
+        }}
+        handleToggleTodo={(id) =>
+          setTodos((prev: any) =>
+            prev.map((t: any) => (t.id === id ? { ...t, done: !t.done } : t)),
+          )
+        }
+        handleDeleteTodo={(id) => {
+          const targetTodo = todos.find((t) => t.id === id);
+          showConfirm({
+            title: "Maddeyi Sil",
+            message: `"${targetTodo?.text || "Bu maddeyi"}" silmek istiyor musun?`,
+            onConfirm: () => {
+              setTodos((prev: any) => prev.filter((t: any) => t.id !== id));
+            },
+          });
+        }}
+        styles={styles}
+      />
 
       {/* Ana Yazı Alanı */}
       <View style={styles.editorWrapper}>
@@ -505,150 +171,36 @@ export function NoteZenEditorScreen() {
         />
       </View>
 
-      {/* 😊 Mini Emoji Paneli */}
-      {isEmojiPanelOpen && !isEmojiPanelMinimized && (
-        <View
-          style={[
-            styles.emojiPanel,
-            { borderColor: currentPrimaryColor + "30" },
-          ]}
-        >
-          <View style={styles.emojiPanelHeader}>
-            <TouchableOpacity
-              onPress={handleMinimizeEmojiPanel}
-              hitSlop={8}
-              style={styles.emojiHeaderBtn}
-            >
-              <Ionicons
-                name="chevron-down"
-                size={18}
-                color={currentPrimaryColor}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleCloseEmojiPanel}
-              hitSlop={8}
-              style={styles.emojiHeaderBtn}
-            >
-              <Ionicons name="close" size={18} color={currentPrimaryColor} />
-            </TouchableOpacity>
-          </View>
+      {/* Emoji Paneli */}
+      <NoteZenEmojiPanel
+        isEmojiPanelOpen={isEmojiPanelOpen}
+        isEmojiPanelMinimized={isEmojiPanelMinimized}
+        currentPrimaryColor={currentPrimaryColor}
+        handleMinimizeEmojiPanel={() => setIsEmojiPanelMinimized(true)}
+        handleCloseEmojiPanel={() => setIsEmojiPanelOpen(false)}
+        handleRestoreEmojiPanel={() => setIsEmojiPanelMinimized(false)}
+        handleInsertEmoji={handleInsertEmoji}
+        styles={styles}
+      />
 
-          <View style={styles.emojiGrid}>
-            {QUICK_EMOJIS.map((emoji) => (
-              <TouchableOpacity
-                key={emoji}
-                onPress={() => handleInsertEmoji(emoji)}
-                style={styles.emojiButton}
-                activeOpacity={0.6}
-              >
-                <Text style={styles.emojiText}>{emoji}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      )}
-
-      {/* 😊 Küçültülmüş Emoji Baloncuğu */}
-      {isEmojiPanelOpen && isEmojiPanelMinimized && (
-        <TouchableOpacity
-          onPress={handleRestoreEmojiPanel}
-          activeOpacity={0.7}
-          style={[
-            styles.minimizedEmojiBubble,
-            { borderColor: currentPrimaryColor + "40" },
-          ]}
-        >
-          <Ionicons
-            name="happy-outline"
-            size={20}
-            color={currentPrimaryColor}
-          />
-        </TouchableOpacity>
-      )}
-
-      {/* Araçlar */}
-      <View
-        style={[
-          styles.toolbarContainer,
-          { borderColor: currentPrimaryColor + "30" },
-        ]}
-      >
-        {bubbles.map((b, i) => {
-          const anim = bubbleAnims[i];
-          const isMicButton = b.key === "b2";
-          return (
-            <Animated.View
-              key={b.key}
-              style={[
-                styles.floatingBubble,
-                {
-                  borderColor:
-                    isRecording && isMicButton
-                      ? "#ff4d4d"
-                      : currentPrimaryColor + "40",
-                  backgroundColor:
-                    isRecording && isMicButton ? "#ffe6e6" : Colors.card,
-                  opacity: anim.interpolate({
-                    inputRange: [0, 0.3, 1],
-                    outputRange: [0, 1, 1],
-                    extrapolate: "clamp",
-                  }),
-                  transform: [
-                    { translateX: Animated.multiply(anim, b.x) },
-                    { translateY: Animated.multiply(anim, b.y) },
-                    {
-                      scale: anim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0, 1],
-                        extrapolateLeft: "clamp",
-                      }),
-                    },
-                    {
-                      rotate: anim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ["-180deg", "0deg"],
-                      }),
-                    },
-                  ],
-                },
-              ]}
-              pointerEvents={isToolsOpen ? "auto" : "none"}
-            >
-              <TouchableOpacity onPress={b.onPress} style={styles.bubbleInner}>
-                <Ionicons
-                  name={b.icon as any}
-                  size={20}
-                  color={
-                    isRecording && isMicButton ? "#ff4d4d" : currentPrimaryColor
-                  }
-                />
-              </TouchableOpacity>
-            </Animated.View>
-          );
-        })}
-
-        {/* Ana Araçlar İkonu */}
-        <TouchableOpacity
-          style={[
-            styles.mainToolButton,
-            isToolsOpen && { backgroundColor: currentPrimaryColor + "15" },
-          ]}
-          onPress={() => {
-            if (isEmojiPanelOpen) setIsEmojiPanelMinimized(true);
-            setIsToolsOpen(!isToolsOpen);
-          }}
-          activeOpacity={0.7}
-        >
-          <Animated.View style={{ transform: [{ rotate: mainRotateDeg }] }}>
-            <Ionicons
-              name={isToolsOpen ? "close" : "options-outline"}
-              size={22}
-              color={currentPrimaryColor}
-            />
-          </Animated.View>
-        </TouchableOpacity>
-      </View>
+      {/* İzole Edilmiş Floating Toolbar */}
+      <NoteZenFloatingToolbar
+        isToolsOpen={isToolsOpen}
+        setIsToolsOpen={(open) => {
+          if (open && isEmojiPanelOpen) setIsEmojiPanelMinimized(true);
+          setIsToolsOpen(open);
+        }}
+        isRecording={isRecording}
+        currentPrimaryColor={currentPrimaryColor}
+        bubbleAnims={bubbleAnims}
+        mainRotate={mainRotate}
+        handleToggleTodoPanel={handleToggleTodoPanel}
+        handleInsertTimestamp={handleInsertTimestamp}
+        handleToggleEmojiPanel={handleToggleEmojiPanel}
+        handleInsertBullet={handleInsertBullet}
+        handleToggleVoiceRecord={handleToggleVoiceRecord}
+        styles={styles}
+      />
     </KeyboardAvoidingView>
   );
 }
