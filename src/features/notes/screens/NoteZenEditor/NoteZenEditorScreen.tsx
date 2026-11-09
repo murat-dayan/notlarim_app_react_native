@@ -4,11 +4,15 @@ import { KeyboardAvoidingView, Platform, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useConfirmStore } from "@/store/useConfirmStore";
+import { useState } from "react";
 import { NoteAudioPlayerBubble } from "../../components/NoteAudioPlayerBubble";
+import { AmbientModal } from "./components/AmbientModal";
+import { AmbientPlayingBar } from "./components/AmbientPlayingBar";
 import { NoteZenEmojiPanel } from "./components/NoteZenEmojiPanel";
 import { NoteZenFloatingToolbar } from "./components/NoteZenFloatingToolbar";
 import { NoteZenHeader } from "./components/NoteZenHeader";
 import { NoteZenTodoPanel } from "./components/NoteZenTodoPanel";
+import { useAmbientSound } from "./hooks/useAmbientSound";
 import { useZenEditor } from "./hooks/useZenEditor";
 import { styles } from "./NoteZenEditor.styles";
 
@@ -50,6 +54,16 @@ export function NoteZenEditorScreen() {
 
   const { showConfirm } = useConfirmStore();
 
+  // Ambiyans Modalının Açık/Kapalı Durumu
+  const [isAmbientModalVisible, setIsAmbientModalVisible] = useState(false);
+  const {
+    currentSoundKey,
+    isPlaying,
+    playAmbient,
+    stopAmbient,
+    togglePlayPause,
+  } = useAmbientSound();
+
   const currentPrimaryColor = activeWorkspace?.color || Colors.primary;
 
   const handleToggleTodoPanel = () => {
@@ -68,7 +82,10 @@ export function NoteZenEditorScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={[styles.container, { paddingTop: insets.top + 12 }]}
+      style={[
+        styles.container,
+        { paddingTop: insets.top + 12, paddingBottom: insets.bottom },
+      ]}
     >
       {/* Üst Header */}
       <NoteZenHeader
@@ -78,6 +95,14 @@ export function NoteZenEditorScreen() {
         currentPrimaryColor={currentPrimaryColor}
         handleTransferAndExit={handleTransferAndExit}
         styles={styles}
+      />
+
+      {/* 🔥 2. SES ÇALARKEN EKRANIN ALTINDA ÇIKACAK MİNİ BİLGİ ETİKETİ */}
+      <AmbientPlayingBar
+        currentSoundKey={currentSoundKey}
+        isPlaying={isPlaying}
+        onTogglePlayPause={togglePlayPause}
+        onStop={stopAmbient}
       />
 
       {/* Ekli Sesli Not Önizlemesi */}
@@ -199,7 +224,17 @@ export function NoteZenEditorScreen() {
         handleToggleEmojiPanel={handleToggleEmojiPanel}
         handleInsertBullet={handleInsertBullet}
         handleToggleVoiceRecord={handleToggleVoiceRecord}
+        handleOpenAmbientModal={() => setIsAmbientModalVisible(true)}
         styles={styles}
+      />
+
+      {/* 🔥 1. SPARKLES'A BASINCA AÇILACAK AMBİYANS MODALI */}
+      <AmbientModal
+        visible={isAmbientModalVisible}
+        onClose={() => setIsAmbientModalVisible(false)}
+        onSelectSound={(key) => playAmbient(key)}
+        currentSoundKey={currentSoundKey}
+        onStop={stopAmbient}
       />
     </KeyboardAvoidingView>
   );

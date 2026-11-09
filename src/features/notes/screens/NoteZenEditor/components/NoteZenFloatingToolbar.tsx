@@ -15,6 +15,7 @@ type NoteZenFloatingToolbarProps = {
   handleToggleEmojiPanel: () => void;
   handleInsertBullet: () => void;
   handleToggleVoiceRecord: () => void;
+  handleOpenAmbientModal: () => void;
   styles: any;
 };
 
@@ -30,6 +31,7 @@ export function NoteZenFloatingToolbar({
   handleToggleEmojiPanel,
   handleInsertBullet,
   handleToggleVoiceRecord,
+  handleOpenAmbientModal,
   styles,
 }: NoteZenFloatingToolbarProps) {
   const mainRotateDeg = mainRotate.interpolate({
@@ -45,7 +47,13 @@ export function NoteZenFloatingToolbar({
       y: -60,
       onPress: handleToggleTodoPanel,
     },
-    { key: "b1", icon: "sparkles-outline", x: 0, y: -140, onPress: () => {} },
+    {
+      key: "b1",
+      icon: "sparkles-outline",
+      x: 0,
+      y: -140,
+      onPress: handleOpenAmbientModal,
+    },
     {
       key: "b7",
       icon: "time-outline",
