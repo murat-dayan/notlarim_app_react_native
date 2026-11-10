@@ -221,6 +221,24 @@ export function NoteCard({
               ]}
             />
             <Text style={styles.noteTypeLabel}>Not</Text>
+            {/* 🔥 Eğer notta konum varsa konum ikonu gösterelim */}
+            {note.latitude && note.longitude && (
+              <View
+                style={[
+                  styles.locationBadge,
+                  {
+                    backgroundColor: currentPrimaryColor + "15",
+                    borderColor: currentPrimaryColor + "40",
+                  },
+                ]}
+              >
+                <Ionicons
+                  name="location-sharp"
+                  size={13}
+                  color={currentPrimaryColor}
+                />
+              </View>
+            )}
           </View>
 
           <View style={styles.rightFooter}>
@@ -400,6 +418,15 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#F1F5F9",
     paddingTop: 10,
+  },
+  locationBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 6,
   },
   leftFooter: {
     flexDirection: "row",

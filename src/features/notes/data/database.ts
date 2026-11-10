@@ -148,6 +148,27 @@ export function getDb() {
         console.error("Migration hatası (todos FK):", error);
       }
 
+      // Migration: 'notes' tablosuna 'latitude' ve 'longitude' sütunlarını ekle
+      try {
+        const tableInfo = await db.getAllAsync<{ name: string }>(
+          "PRAGMA table_info(notes)",
+        );
+
+        const hasLatColumn = tableInfo.some((col) => col.name === "latitude");
+        if (!hasLatColumn) {
+          await db.execAsync("ALTER TABLE notes ADD COLUMN latitude REAL;");
+          console.log("Migration başarılı: 'latitude' sütunu eklendi.");
+        }
+
+        const hasLngColumn = tableInfo.some((col) => col.name === "longitude");
+        if (!hasLngColumn) {
+          await db.execAsync("ALTER TABLE notes ADD COLUMN longitude REAL;");
+          console.log("Migration başarılı: 'longitude' sütunu eklendi.");
+        }
+      } catch (error) {
+        console.error("Migration hatası (konum sütunları):", error);
+      }
+
       await db.execAsync(`
   CREATE TABLE IF NOT EXISTS todos (
     id TEXT PRIMARY KEY NOT NULL,

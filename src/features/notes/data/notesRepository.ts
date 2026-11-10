@@ -13,6 +13,8 @@ type NoteRow = {
   is_locked: number;
   workspace_id: string;
   audio_uri: string | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 const toNote = (row: NoteRow, todos: TodoItem[] = []): Note => ({
@@ -26,6 +28,8 @@ const toNote = (row: NoteRow, todos: TodoItem[] = []): Note => ({
   isLocked: Boolean(row.is_locked),
   workspaceId: row.workspace_id || "default",
   audioUri: row.audio_uri || undefined,
+  latitude: row.latitude ?? undefined,
+  longitude: row.longitude ?? undefined,
   todos,
 });
 
@@ -45,7 +49,7 @@ export const notesRepository = {
     const tagsJson = JSON.stringify(note.tags || []); // Diziyi JSON metnine çeviriyoruz
 
     await db.runAsync(
-      "INSERT INTO notes (id, title, content, tags, created_at,updated_at , is_pinned, is_locked, workspace_id, audio_uri) VALUES (?,?,?, ?, ?, ?, ?, ?,?,?)",
+      "INSERT INTO notes (id, title, content, tags, created_at,updated_at , is_pinned, is_locked, workspace_id, audio_uri, latitude,longitude) VALUES (?,?,?,?,?, ?, ?, ?, ?, ?,?,?)",
       [
         note.id,
         note.title,
@@ -57,6 +61,8 @@ export const notesRepository = {
         note.isLocked ? 1 : 0,
         note.workspaceId || "default",
         note.audioUri || null,
+        note.latitude || null,
+        note.longitude || null,
       ],
     );
     if (note.todos && note.todos.length > 0) {
@@ -69,7 +75,7 @@ export const notesRepository = {
     const tagsJson = JSON.stringify(note.tags || []);
 
     await db.runAsync(
-      "UPDATE notes SET title = ?, content = ?, tags = ?, updated_at = ?, workspace_id = ?, audio_uri = ? WHERE id = ?",
+      "UPDATE notes SET title = ?, content = ?, tags = ?, updated_at = ?, workspace_id = ?, audio_uri = ?, latitude = ?, longitude = ? WHERE id = ?",
       [
         note.title,
         note.content,
@@ -77,7 +83,9 @@ export const notesRepository = {
         note.updatedAt,
         note.workspaceId,
         note.audioUri || null,
-        note.id,
+        note.latitude || null, // 7. parametre (latitude)
+        note.longitude || null, // 8. parametre (longitude)
+        note.id, // 9. parametre (WHERE id için)
       ],
     );
     if (note.todos) {

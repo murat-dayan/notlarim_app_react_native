@@ -24,4 +24,6 @@ export type Note = {
   workspaceId: string; // 🔥 Eklendi
   audioUri?: string;
   todos?: TodoItem[];
+  latitude?: number;
+  longitude?: number;
 };

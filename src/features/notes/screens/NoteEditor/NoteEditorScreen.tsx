@@ -46,6 +46,11 @@ export function NoteEditorScreen() {
     handleAddBullet,
     handleToggleTodo,
     characterCount,
+    latitude,
+    longitude,
+    isGettingLocation,
+    handleAddCurrentLocation,
+    handleRemoveLocation,
   } = useNoteEditor();
 
   const activeWorkspace = workspaces.find(
@@ -158,6 +163,79 @@ export function NoteEditorScreen() {
               primaryColor={currentPrimaryColor}
             />
           )}
+
+          {/* 📍 Konum Gösterge ve Ekleme Alanı */}
+          <View style={{ marginVertical: 8 }}>
+            {latitude && longitude ? (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: currentPrimaryColor + "15",
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: currentPrimaryColor + "40",
+                  justifyContent: "space-between",
+                }}
+              >
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+                >
+                  <Ionicons
+                    name="location"
+                    size={18}
+                    color={currentPrimaryColor}
+                  />
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: currentPrimaryColor,
+                      fontWeight: "500",
+                    }}
+                  >
+                    Konum eklendi ({latitude.toFixed(4)}, {longitude.toFixed(4)}
+                    )
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={handleRemoveLocation}>
+                  <Ionicons name="close-circle" size={18} color="#ef4444" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                onPress={handleAddCurrentLocation}
+                disabled={isGettingLocation}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  alignSelf: "flex-start",
+                  paddingVertical: 6,
+                  paddingHorizontal: 10,
+                  borderRadius: 6,
+                  borderWidth: 1,
+                  borderColor: Colors.border || "#e2e8f0",
+                }}
+              >
+                {isGettingLocation ? (
+                  <ActivityIndicator size="small" color={currentPrimaryColor} />
+                ) : (
+                  <Ionicons
+                    name="location-outline"
+                    size={16}
+                    color={currentPrimaryColor}
+                  />
+                )}
+                <Text style={{ fontSize: 13, color: Colors.textSecondary }}>
+                  {isGettingLocation
+                    ? "Konum alınıyor..."
+                    : "Bu nota konum ekle"}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
           {/* İçerik Inputu */}
           <NoteTextInput

@@ -13,6 +13,8 @@ export type NoteSlice = {
     tags: string[],
     audioUri?: string | null,
     todos?: TodoItem[],
+    latitude?: number | null, // 🔥 Eklendi
+    longitude?: number | null, // 🔥 Eklendi
   ) => Promise<void>;
   updateNote: (
     id: string,
@@ -21,6 +23,8 @@ export type NoteSlice = {
     tags: string[],
     audioUri?: string | null,
     todos?: TodoItem[],
+    latitude?: number | null, // 🔥 Eklendi
+    longitude?: number | null, // 🔥 Eklendi
   ) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   deleteSelectedNotes: () => Promise<void>;
@@ -40,7 +44,15 @@ export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
     set({ notes, isLoading: false });
   },
 
-  addNote: async (title, content, tags, audioUri = null, todos = []) => {
+  addNote: async (
+    title,
+    content,
+    tags,
+    audioUri = null,
+    todos = [],
+    latitude = null,
+    longitude = null,
+  ) => {
     const now = Date.now();
     const activeWorkspaceId = (get() as any).activeWorkspaceId || "default";
     const yeniNot: Note = {
@@ -55,13 +67,24 @@ export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
       workspaceId: activeWorkspaceId,
       audioUri: audioUri || undefined,
       todos, // 🔥 Yeni
+      latitude: latitude || undefined, // 🔥 Eklendi
+      longitude: longitude || undefined, // 🔥 Eklendi
     };
 
     await notesRepository.insert(yeniNot);
     set((state) => ({ notes: [yeniNot, ...state.notes] }));
   },
 
-  updateNote: async (id, title, content, tags, audioUri, todos) => {
+  updateNote: async (
+    id,
+    title,
+    content,
+    tags,
+    audioUri,
+    todos,
+    latitude,
+    longitude,
+  ) => {
     const eski = get().notes.find((n) => n.id === id);
     if (!eski) return;
 
@@ -73,6 +96,9 @@ export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
       updatedAt: Date.now(),
       audioUri: audioUri !== undefined ? audioUri || undefined : eski.audioUri,
       todos: todos !== undefined ? todos : eski.todos, // 🔥 Yeni
+      latitude: latitude !== undefined ? latitude || undefined : eski.latitude, // 🔥 Eklendi
+      longitude:
+        longitude !== undefined ? longitude || undefined : eski.longitude, // 🔥 Eklendi
     };
     await notesRepository.update(guncel);
 

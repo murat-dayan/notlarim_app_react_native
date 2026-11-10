@@ -1,3 +1,4 @@
+import * as Location from "expo-location"; // 🔥 Eklendi
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
@@ -23,6 +24,10 @@ export function useNoteEditor() {
 
   const existing = notes.find((note) => note.id === id);
 
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+
   // Form state
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -47,6 +52,8 @@ export function useNoteEditor() {
       setSelectedTags([]);
       setAudioUri(null);
       setTodos([]);
+      setLatitude(null); // 🔥 Eklendi
+      setLongitude(null); // 🔥 Eklendi
 
       return;
     }
@@ -62,9 +69,49 @@ export function useNoteEditor() {
     setSelectedTags(existing.tags ?? []);
     setAudioUri(existing.audioUri ?? null);
     setTodos(existing.todos ?? []);
+    setLatitude(existing.latitude ?? null); // 🔥 Eklendi
+    setLongitude(existing.longitude ?? null); // 🔥 Eklendi
 
     initializedNoteId.current = id;
   }, [id, isLoading, existing]);
+
+  // 🔥 Anlık Konum Alma Fonksiyonu
+  const handleAddCurrentLocation = async () => {
+    try {
+      setIsGettingLocation(true);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+
+      if (status !== "granted") {
+        Alert.alert(
+          "İzin Reddedildi",
+          "Konum ekleyebilmek için konum izni vermeniz gerekiyor.",
+        );
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      setLatitude(location.coords.latitude);
+      setLongitude(location.coords.longitude);
+      Alert.alert("Başarılı", "Mevcut konumun bu nota eklendi! 📍");
+    } catch (error) {
+      console.error("Konum alma hatası:", error);
+      Alert.alert(
+        "Hata",
+        "Konum alınamadı, lütfen GPS ayarlarınızı kontrol edin.",
+      );
+    } finally {
+      setIsGettingLocation(false);
+    }
+  };
+
+  // 🔥 Konumu Kaldırma Fonksiyonu (Opsiyonel ama kullanışlı)
+  const handleRemoveLocation = () => {
+    setLatitude(null);
+    setLongitude(null);
+  };
 
   // Etiket seçme / kaldırma
   const toggleTag = (tag: string) => {
@@ -98,9 +145,26 @@ export function useNoteEditor() {
     }
 
     if (id) {
-      await updateNote(id, title, content, selectedTags, audioUri, todos);
+      await updateNote(
+        id,
+        title,
+        content,
+        selectedTags,
+        audioUri,
+        todos,
+        latitude,
+        longitude,
+      );
     } else {
-      await addNote(title, content, selectedTags, audioUri, todos);
+      await addNote(
+        title,
+        content,
+        selectedTags,
+        audioUri,
+        todos,
+        latitude,
+        longitude,
+      );
     }
 
     router.back();
@@ -160,6 +224,12 @@ export function useNoteEditor() {
     selectedTags,
     audioUri,
     todos,
+
+    latitude,
+    longitude,
+    isGettingLocation,
+    handleAddCurrentLocation,
+    handleRemoveLocation,
 
     customTagInput,
     setCustomTagInput,
