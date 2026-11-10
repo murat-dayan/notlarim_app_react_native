@@ -1,3 +1,4 @@
+import { registerGeofencesAsync } from "@/services/geofenceTask";
 import { StateCreator } from "zustand";
 import { notesRepository } from "../../data/notesRepository";
 import type { Note, TodoItem } from "../../types";
@@ -72,6 +73,7 @@ export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
     };
 
     await notesRepository.insert(yeniNot);
+    await registerGeofencesAsync();
     set((state) => ({ notes: [yeniNot, ...state.notes] }));
   },
 
@@ -102,6 +104,8 @@ export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
     };
     await notesRepository.update(guncel);
 
+    await registerGeofencesAsync();
+
     set((state) => ({
       notes: [guncel, ...state.notes.filter((n) => n.id !== id)],
     }));
@@ -109,6 +113,7 @@ export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
 
   deleteNote: async (id) => {
     await notesRepository.remove(id);
+    await registerGeofencesAsync();
     set((state) => ({ notes: state.notes.filter((n) => n.id !== id) }));
   },
 
@@ -118,6 +123,7 @@ export const createNoteSlice: StateCreator<NoteSlice, [], [], NoteSlice> = (
     if (!selectedNoteIds || selectedNoteIds.length === 0) return;
 
     await notesRepository.removeMany(selectedNoteIds);
+    await registerGeofencesAsync();
     set((state) => ({
       notes: state.notes.filter((n) => !selectedNoteIds.includes(n.id)),
     }));

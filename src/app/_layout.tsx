@@ -1,5 +1,6 @@
 import { GlobalConfirmModal } from "@/components/GlobalConfirmModal";
 import { useNotesStore } from "@/features/notes/store/notesStore";
+import { registerGeofencesAsync } from "@/services/geofenceTask";
 import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
 import { useEffect } from "react";
@@ -18,6 +19,7 @@ export default function RootLayout() {
   const loadWorkspaces = useNotesStore((s) => s.loadWorkspaces);
 
   useEffect(() => {
+    registerGeofencesAsync();
     if (fontsLoaded) {
       SplashScreen.hideAsync();
     }
