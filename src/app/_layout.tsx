@@ -10,6 +10,8 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     BuildStorm: require("../../assets/fonts/RubikStorm-Regular.ttf"),
+    Aladin: require("../../assets/fonts/Aladin-Regular.ttf"),
+    Amarante: require("../../assets/fonts/Amarante-Regular.ttf"),
   });
 
   const loadNotes = useNotesStore((s) => s.loadNotes);

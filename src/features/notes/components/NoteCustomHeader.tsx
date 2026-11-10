@@ -118,7 +118,7 @@ export function NoteCustomHeader({
           <View style={styles.titleContainer}>
             <NoteText
               variant="h1"
-              fontFamily="BuildStorm"
+              fontFamily="Amarante"
               style={[styles.titleText, { color: currentPrimaryColor }]}
               numberOfLines={1}
             >

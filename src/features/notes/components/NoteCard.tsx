@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useNotesStore } from "../store/notesStore";
 import { Note } from "../types";
 import { NoteAudioPlayerBubble } from "./NoteAudioPlayerBubble";
+import { NoteText } from "./NoteText";
 
 type Props = {
   note: Note;
@@ -86,9 +87,13 @@ export function NoteCard({
 
       <View style={styles.textContainer}>
         <View style={styles.headerRow}>
-          <Text style={styles.title} numberOfLines={1}>
+          <NoteText
+            style={styles.title}
+            numberOfLines={1}
+            fontFamily="Amarante"
+          >
             {note.title || "Başlıksız Not"}
-          </Text>
+          </NoteText>
 
           {/* Hap Şeklinde Modern Pin Butonu */}
           {isSelectionMode ? (

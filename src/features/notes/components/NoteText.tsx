@@ -3,7 +3,7 @@ import { StyleSheet, Text, TextProps } from "react-native";
 type TextVariant = "h1" | "h2" | "body" | "caption" | "button";
 
 // 🔥 Burada tırnak açtığında çıkmasını istediğin seçenekleri listeliyoruz
-type FontFamilyOption = "BuildStorm" | "system";
+type FontFamilyOption = "BuildStorm" | "Aladin" | "Amarante" | "system";
 
 interface AppTextProps extends TextProps {
   variant?: TextVariant;
@@ -39,9 +39,15 @@ export function NoteText({
     }
   };
 
-  // Eğer "BuildStorm" seçilirse onu uygula, "system" veya boş bırakılırsa sistem fontu kullanılsın
-  const finalFontFamily =
-    fontFamily === "BuildStorm" ? "BuildStorm" : undefined;
+  // 🔥 Hangi fontun seçildiğini kontrol ediyoruz
+  const getFontFamilyStyle = () => {
+    if (fontFamily === "BuildStorm") return "BuildStorm";
+    if (fontFamily === "Aladin") return "Aladin";
+    if (fontFamily === "Amarante") return "Amarante";
+    return undefined; // "system" veya undefined durumunda sistem fontu kullanılır
+  };
+
+  const finalFontFamily = getFontFamilyStyle();
 
   return (
     <Text
